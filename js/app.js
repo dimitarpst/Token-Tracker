@@ -1,12 +1,4 @@
 let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
-function closeDrawModal() {
-  const $modal = $("#draw-input-screen");
-
-  $modal.fadeOut(300, function(){
-    $modal.addClass("d-none").css("display", "");
-    $("#swipe-zone").show();
-  });
-}
 $(document).ready(function(){
   // Request notification permission if available
   if ("Notification" in window && Notification.permission === "default") {
@@ -173,7 +165,8 @@ $(document).ready(function(){
     $("#crestValue").text(minValue);
 
     if(ctx){ drawRing(minValue); }
-    $("#draw-input-screen").removeClass("d-none").css("display","flex").hide().fadeIn(300);
+    // Open the draw modal
+    $("#draw-input-screen").removeClass("d-none").css("display", "flex").hide().fadeIn(300);
     $("#swipe-zone").hide();
   });
 
@@ -273,20 +266,21 @@ $(document).ready(function(){
       User: currentUser
     };
 
+    // Immediately close the modal (without fade-out)
+    $("#draw-input-screen").hide().addClass("d-none");
+    $("#swipe-zone").show();
+
+    // Submit entry to server and then refresh remote data
     submitEntryToSheet(entry, function(){
+      // Add a slight delay for processing
       setTimeout(() => {
         fetchRemoteData(() => {
           updateHistory();
           updateStats();
           updateCompare();
-          closeDrawModal();
-
-          $("#draw-input-screen").addClass("d-none").hide();
-          $("#swipe-zone").show();
         });
-      }, 600); 
+      }, 600);
     });
-    
 
     // Show notification if permitted
     if("Notification" in window && Notification.permission === "granted"){
@@ -295,16 +289,10 @@ $(document).ready(function(){
         icon: "assets/token.png"
       });
     }
-
-    // Close the modal explicitly—on mobile this ensures the view is updated
-    $("#draw-input-screen").addClass("d-none").removeAttr("style");
-    $("#swipe-zone").show();
   });
   
   $("#cancel-draw").click(function(){
-    $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none").css("display", "none");
-    });
+    $("#draw-input-screen").hide().addClass("d-none");
     $("#swipe-zone").show();
   });
 
