@@ -12,10 +12,16 @@
 <body>
   <div id="swipe-zone"></div>
 
+  <div id="loader" class="d-none">
+    <div class="spinner-border text-dark" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
   <div id="welcome-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-start">
-    <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Token Tracker</h1>
-    <p class="mb-4 text-dark">Who are you?</p>
     <div class="welcome-choices d-flex flex-column flex-fill w-100">
+      <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Token Tracker</h1>
+      <p class="mb-4 text-dark">Who are you?</p>
       <button class="user-button choose-user" data-user="Mitko">
         <img src="assets/fredrinn.png" alt="Mitko" class="user-img-giant" />
         <span class="fs-3 text-dark mt-2">Mitko</span>
@@ -103,7 +109,7 @@
       <section id="tab-stats" class="tab-content d-none">
         <h3 class="mt-3 text-light">Stats</h3>
         <div class="container">
-          <div class="stats-panel card p-3">
+          <div class="stats-panel card p-3 mb-3">
             <div class="text-center mb-3">
               <img id="character-image" src="" alt="Character" class="character-img mb-2">
               <h4 id="progress-title">Progress</h4>
@@ -121,24 +127,46 @@
               <img src="assets/token.png" alt="Token" class="small-icon">
             </p>
           </div>
-          <canvas id="stats-chart" class="mt-4"></canvas>
+
+          <!-- MAIN BAR CHART (Already existed) -->
+          <canvas id="stats-chart" class="mb-4"></canvas>
+
+          <!-- 1) Pie Chart: Free vs Diamond -->
+          <div class="card mb-3 p-2">
+            <h5 class="text-dark">Free vs Diamond</h5>
+            <canvas id="stats-pie"></canvas>
+          </div>
+
+          <!-- 2) Line Chart: Tokens over Time (moving average) -->
+          <div class="card mb-3 p-2">
+            <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
+            <canvas id="stats-line"></canvas>
+          </div>
+
+          <!-- 3) Distribution Histogram of tokens -->
+          <div class="card mb-3 p-2">
+            <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
+            <canvas id="stats-hist"></canvas>
+          </div>
+
+          <!-- 4) Bar Chart by Diamond Tier -->
+          <div class="card mb-3 p-2">
+            <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
+            <canvas id="stats-tier"></canvas>
+          </div>
+
+          <!-- Advanced Metrics -->
+          <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
+            <h5 class="text-light mb-3">Advanced Metrics</h5>
+            <div id="advanced-metrics-grid" class="metrics-grid"></div>
+          </div>
+
         </div>
       </section>
 
-      <!-- Compare Tab -->
       <section id="tab-compare" class="tab-content d-none">
         <h3 class="mt-3 text-light">Compare</h3>
-        <div class="container">
-          <div class="row">
-            <div class="col-6 text-center">
-              <h5>Mitko</h5>
-              <p id="compare-mitko">0 Crests</p>
-            </div>
-            <div class="col-6 text-center">
-              <h5>Aylin</h5>
-              <p id="compare-aylin">0 Crests</p>
-            </div>
-          </div>
+        <div class="container" id="compare-container">
         </div>
       </section>
 

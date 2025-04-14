@@ -262,7 +262,6 @@ body.aylin {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Event Logo Styles */
 .event-logo {
   width: 80%;
   max-width: 200px;
@@ -272,4 +271,124 @@ body.aylin {
 .nav-logo {
   width: 120px;
   height: auto;
+}
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #FFD4D4, #FFFFE8); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2500;
+}
+
+.history-card {
+  background: linear-gradient(135deg, #fff0f5, #ffe4e1);
+  border-radius: 16px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.history-card:hover {
+  transform: translateY(-2px);
+}
+
+.history-date {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #d63384;
+  margin-bottom: 5px;
+}
+
+.history-details {
+  font-size: 1.1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.history-card .btn {
+  padding: 6px 10px;
+}
+
+.card.mb-3.p-2{
+  background: linear-gradient(135deg, #FFD4D4, #FFF5F5);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* ADVANCED METRICS GRID */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  color: #fff; /* text color for labels/numbers */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: scale(1.02);
+}
+
+/* The label up top (like "Total Draws") */
+.metric-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* The bold numeric or main value */
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #FFD4D4;
+}
+
+/* For small remarks (like percentages) */
+.metric-note {
+  font-size: 0.8rem;
+  color: #ffc0cb;
+  margin-top: 2px;
+}
+
+/* Let’s define a small icon style for these metrics */
+.metric-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+/* You can also define bigger icons if you want, or reuse .small-icon */
+
+/* Compare Columns */
+.compare-row {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap; /* in case the screen is small */
+}
+
+.compare-column {
+  flex: 1 1 300px; /* or use col-md-6 if you prefer Bootstrap classes */
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+  border-radius: 8px;
+  min-width: 260px;
 }
