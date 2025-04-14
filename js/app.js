@@ -265,15 +265,19 @@ $(document).ready(function(){
       User: currentUser
     };
 
-    // Submit to the server and update UI after success
     submitEntryToSheet(entry, function(){
-      // After server submission succeeds, refresh remote data
-      fetchRemoteData(() => {
-        updateHistory();
-        updateStats();
-        updateCompare();
-      });
+      setTimeout(() => {
+        fetchRemoteData(() => {
+          updateHistory();
+          updateStats();
+          updateCompare();
+    
+          $("#draw-input-screen").addClass("d-none").hide();
+          $("#swipe-zone").show();
+        });
+      }, 600); 
     });
+    
 
     // Show notification if permitted
     if("Notification" in window && Notification.permission === "granted"){
