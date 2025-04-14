@@ -1,4 +1,12 @@
 let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
+function closeDrawModal() {
+  const $modal = $("#draw-input-screen");
+
+  $modal.fadeOut(300, function(){
+    $modal.addClass("d-none").css("display", "");
+    $("#swipe-zone").show();
+  });
+}
 $(document).ready(function(){
   // Request notification permission if available
   if ("Notification" in window && Notification.permission === "default") {
@@ -271,7 +279,8 @@ $(document).ready(function(){
           updateHistory();
           updateStats();
           updateCompare();
-    
+          closeDrawModal();
+
           $("#draw-input-screen").addClass("d-none").hide();
           $("#swipe-zone").show();
         });
