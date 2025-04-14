@@ -177,7 +177,6 @@ body.aylin {
   pointer-events: auto;
 }
 
-/* Fullscreen Radial Slider Container */
 #draw-input-screen {
   position: fixed; 
   top: 0; 
@@ -222,7 +221,6 @@ body.aylin {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Welcome Screen Adjustments */
 #welcome-screen {
   position: fixed;
   top: 0;
@@ -323,7 +321,6 @@ body.aylin {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* ADVANCED METRICS GRID */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -335,7 +332,7 @@ body.aylin {
   border-radius: 8px;
   padding: 12px;
   text-align: center;
-  color: #fff; /* text color for labels/numbers */
+  color: #fff;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: transform 0.2s ease;
 }
@@ -344,7 +341,6 @@ body.aylin {
   transform: scale(1.02);
 }
 
-/* The label up top (like "Total Draws") */
 .metric-label {
   font-size: 0.9rem;
   font-weight: bold;
@@ -355,38 +351,32 @@ body.aylin {
   gap: 5px;
 }
 
-/* The bold numeric or main value */
 .metric-value {
   font-size: 1.2rem;
   font-weight: 600;
   color: #FFD4D4;
 }
 
-/* For small remarks (like percentages) */
 .metric-note {
   font-size: 0.8rem;
   color: #ffc0cb;
   margin-top: 2px;
 }
 
-/* Let’s define a small icon style for these metrics */
 .metric-icon {
   width: 16px;
   height: 16px;
   vertical-align: middle;
 }
 
-/* You can also define bigger icons if you want, or reuse .small-icon */
-
-/* Compare Columns */
 .compare-row {
   display: flex;
   gap: 2rem;
-  flex-wrap: wrap; /* in case the screen is small */
+  flex-wrap: wrap; 
 }
 
 .compare-column {
-  flex: 1 1 300px; /* or use col-md-6 if you prefer Bootstrap classes */
+  flex: 1 1 300px;
   background: rgba(0, 0, 0, 0.5);
   padding: 1rem;
   border-radius: 8px;

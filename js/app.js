@@ -1,13 +1,11 @@
 let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
 $(document).ready(function(){
-  // Request notification permission
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission().then(function(permission){
       console.log("Notification permission: " + permission);
     });
   }
 
-  // We'll keep references to all charts so we can destroy them before re-creating
   window.myChart = null;       // The original bar chart (tokens or diamonds)
   window.myPieChart = null;    // Pie chart: free vs diamond
   window.myLineChart = null;   // Moving average line chart
@@ -24,7 +22,6 @@ $(document).ready(function(){
   let maxValue = 20;
   let crestValue = minValue;
 
-  // Stats view: "tokens" (default) or "diamonds"
   let statsView = "tokens";
 
   // Grab radial canvas
@@ -505,15 +502,12 @@ $(document).ready(function(){
   function updateLineChart(entries){
     if(window.myLineChart) { window.myLineChart.destroy(); }
 
-    // Sort by timestamp ascending
     let sorted = [...entries].sort((a,b) => a.timestamp - b.timestamp);
 
-    // We'll do a simple moving average of window size = 3
     const windowSize = 3;
     let tokensArray = sorted.map(e => e.crests);
     let labels = sorted.map((e,i) => "D" + (i+1));
 
-    // Calculate moving average
     let maData = [];
     for(let i = 0; i < tokensArray.length; i++){
       let start = Math.max(0, i - windowSize + 1);
@@ -578,7 +572,6 @@ $(document).ready(function(){
   function updateTierChart(entries){
     if(window.myTierChart) { window.myTierChart.destroy(); }
 
-    // Group draws by diamond tier => compute average tokens
     let tiers = [0,25,50,450,500];
     let tierLabels = ["Free(0)","25💎","50💎","450💎","500💎"];
     let avgTokensForTier = [];
@@ -716,7 +709,6 @@ $(document).ready(function(){
   `;
   
   
-    // Render into the grid
     $("#advanced-metrics-grid").html(advHtml);
   }
   
@@ -724,7 +716,6 @@ $(document).ready(function(){
 
   //===================== COMPARE =====================
   function updateCompare(){
-    // Build the compare row/columns
     let compareHTML = `
       <div class="compare-row">
         <div class="compare-column" id="compare-mitko-col">
@@ -739,19 +730,16 @@ $(document).ready(function(){
     `;
     $("#compare-container").html(compareHTML);
   
-    // Compute & display for Mitko
     let mitkoMetrics = computeMetrics(localData["Mitko"]);
     let mitkoHTML = buildMetricsHTML(mitkoMetrics);
     $("#compare-mitko-grid").html(mitkoHTML);
   
-    // Compute & display for Aylin
     let aylinMetrics = computeMetrics(localData["Aylin"]);
     let aylinHTML = buildMetricsHTML(aylinMetrics);
     $("#compare-aylin-grid").html(aylinHTML);
   }
   
   function buildMetricsHTML(m){
-    // `m` is the object from computeMetrics()
     let freePercent = (m.totalDraws === 0) 
       ? 0 
       : (m.totalFree / m.totalDraws) * 100;
@@ -759,8 +747,6 @@ $(document).ready(function(){
       ? 0 
       : (m.totalDiamond / m.totalDraws) * 100;
   
-    // If you want to skip diamonds spent or other stats, omit them
-    // Or you can do the same as in updateAdvancedMetrics with images
     let bestDrawHTML = "";
     if(m.bestDraw){
       bestDrawHTML = `
@@ -834,11 +820,9 @@ $(document).ready(function(){
     let totalCrests = entries.reduce((acc,e)=>acc+e.crests,0);
     let tokensPerDraw = totalDraws === 0 ? 0 : totalCrests / totalDraws;
   
-    // Best draw
     let best = entries.reduce((b, e) => e.crests > b.crests ? e : b, {crests:-Infinity});
     let bestDraw = (best.crests === -Infinity) ? null : best;
   
-    // Luck logic (above 9 => "Lucky", below => "Unlucky", else "Average")
     let luckStatus = "Average";
     if(tokensPerDraw > 9){ luckStatus = "Lucky"; }
     else if(tokensPerDraw < 9){ luckStatus = "Unlucky"; }
@@ -870,7 +854,6 @@ $(document).ready(function(){
         id: id
       }, function(response) {
         console.log("Delete response:", response);
-        // Refresh from server
         fetchRemoteData(() => {
           updateHistory();
           updateStats();

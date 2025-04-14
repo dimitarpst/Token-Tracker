@@ -53,7 +53,6 @@
     </nav>
     <div id="overlay"></div>
 
-    <!-- Top Navbar with Event Logo -->
     <div id="top-bar" class="d-flex align-items-center text-light px-3">
       <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
       <button id="open-sidebar" class="btn btn-link text-light ms-auto">
@@ -62,7 +61,6 @@
     </div>
 
     <div id="content">
-      <!-- Home Tab: Add Draw -->
       <section id="tab-home" class="tab-content">
         <h3 class="mt-3 text-light">Add Draw</h3>
         <div id="draw-options" class="container">
@@ -97,7 +95,6 @@
         <div id="draw-list" class="container mt-3"></div>
       </section>
 
-      <!-- History Tab -->
       <section id="tab-history" class="tab-content d-none">
         <h3 class="mt-3 text-light">History</h3>
         <div class="container">
@@ -105,7 +102,6 @@
         </div>
       </section>
 
-      <!-- Stats Tab -->
       <section id="tab-stats" class="tab-content d-none">
         <h3 class="mt-3 text-light">Stats</h3>
         <div class="container">
@@ -114,7 +110,6 @@
               <img id="character-image" src="" alt="Character" class="character-img mb-2">
               <h4 id="progress-title">Progress</h4>
             </div>
-            <!-- Stats Toggle -->
             <div id="stats-toggle" class="d-flex justify-content-center mb-3">
               <button id="toggle-tokens" class="btn btn-sm btn-outline-light active">Tokens</button>
               <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
@@ -128,34 +123,28 @@
             </p>
           </div>
 
-          <!-- MAIN BAR CHART (Already existed) -->
           <canvas id="stats-chart" class="mb-4"></canvas>
 
-          <!-- 1) Pie Chart: Free vs Diamond -->
           <div class="card mb-3 p-2">
             <h5 class="text-dark">Free vs Diamond</h5>
             <canvas id="stats-pie"></canvas>
           </div>
 
-          <!-- 2) Line Chart: Tokens over Time (moving average) -->
           <div class="card mb-3 p-2">
             <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
             <canvas id="stats-line"></canvas>
           </div>
 
-          <!-- 3) Distribution Histogram of tokens -->
           <div class="card mb-3 p-2">
             <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
             <canvas id="stats-hist"></canvas>
           </div>
 
-          <!-- 4) Bar Chart by Diamond Tier -->
           <div class="card mb-3 p-2">
             <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
             <canvas id="stats-tier"></canvas>
           </div>
 
-          <!-- Advanced Metrics -->
           <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
             <h5 class="text-light mb-3">Advanced Metrics</h5>
             <div id="advanced-metrics-grid" class="metrics-grid"></div>
@@ -170,7 +159,6 @@
         </div>
       </section>
 
-      <!-- Settings Tab -->
       <section id="tab-settings" class="tab-content d-none">
         <h3 class="mt-3 text-light">Settings</h3>
         <div class="container">
@@ -181,19 +169,15 @@
     </div>
   </div>
 
-  <!-- Fullscreen Radial Input Screen -->
   <div id="draw-input-screen" class="d-none">
     <div class="radial-container">
       <img id="draw-type-icon" src="" alt="Draw Icon" class="draw-large-img">
       <p id="selected-draw-label" class="text-light fs-4 mt-3"></p>
-      <!-- Extended Mode Toggle -->
       <div class="form-check form-switch text-light mb-2">
         <input class="form-check-input" type="checkbox" id="extendedMode">
         <label class="form-check-label" for="extendedMode">Extended Mode</label>
       </div>
-      <!-- Radial Slider Canvas -->
       <canvas id="radialSlider" width="260" height="260"></canvas>
-      <!-- Display the token value below the canvas -->
       <p class="text-light fs-5 mt-3">
         <img src="assets/token.png" alt="Token" class="small-icon">
         <span id="crestValue">0</span>
