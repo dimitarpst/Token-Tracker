@@ -1,30 +1,32 @@
 let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
 $(document).ready(function(){
+  // Request notification permission if available
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission().then(function(permission){
       console.log("Notification permission: " + permission);
     });
   }
 
-  window.myChart = null;       // The original bar chart (tokens or diamonds)
+  // Global chart instances
+  window.myChart = null;       // Main chart (tokens or diamonds)
   window.myPieChart = null;    // Pie chart: free vs diamond
-  window.myLineChart = null;   // Moving average line chart
-  window.myHistChart = null;   // Distribution histogram
+  window.myLineChart = null;   // Line chart: moving average
+  window.myHistChart = null;   // Histogram
   window.myTierChart = null;   // Bar chart by diamond tier
 
   // Data and user identity
   let localData = { Mitko: [], Aylin: [] };
   let currentUser = localStorage.getItem("currentUser");
   let currentDiamond = null;
-
+  
   // Radial slider defaults
   let minValue = 3;
   let maxValue = 20;
   let crestValue = minValue;
-
+  
   let statsView = "tokens";
 
-  // Grab radial canvas
+  // Grab radial canvas and prepare drawing context
   const radialCanvas = document.getElementById("radialSlider");
   let ctx = radialCanvas ? radialCanvas.getContext("2d") : null;
   const centerX = radialCanvas ? radialCanvas.width / 2 : 0;
@@ -32,7 +34,7 @@ $(document).ready(function(){
   const radius = 100;
   const lineWidth = 20;
 
-  // Check which user is active
+  // Show welcome screen if no user is selected
   if(!currentUser){
     $("#welcome-screen").removeClass("d-none");
     $("#main-app").addClass("d-none");
@@ -81,7 +83,6 @@ $(document).ready(function(){
               id: entry.Entry_Id ? Number(String(entry.Entry_Id).trim()) : 0,
               diamond: parseInt(entry.Diamonds) || 0,
               crests: parseInt(entry.Crests) || 0,
-              date: entry.Date,
               timestamp: Date.parse(entry.Timestamp) || 0,
               user: entry.User
             };
@@ -168,7 +169,7 @@ $(document).ready(function(){
     $("#swipe-zone").hide();
   });
 
-  //===================== EXTENDED MODE =====================
+  //===================== EXTENDED MODE SWITCH =====================
   $("#extendedMode").change(function(){
     maxValue = $(this).is(":checked") ? 300 : 20;
     crestValue = Math.max(minValue, Math.min(crestValue, maxValue));
@@ -264,16 +265,17 @@ $(document).ready(function(){
       User: currentUser
     };
 
-    localData[currentUser].push({
-      id: null, 
-      diamond: entry.diamond,
-      crests: entry.crests,
-      user: currentUser,
-      timestamp: entry.timestamp
+    // Submit to the server and update UI after success
+    submitEntryToSheet(entry, function(){
+      // After server submission succeeds, refresh remote data
+      fetchRemoteData(() => {
+        updateHistory();
+        updateStats();
+        updateCompare();
+      });
     });
 
-    submitEntryToSheet(entry);
-
+    // Show notification if permitted
     if("Notification" in window && Notification.permission === "granted"){
       new Notification("Draw Recorded", {
         body: "You gained " + crestValue + " tokens!",
@@ -281,25 +283,22 @@ $(document).ready(function(){
       });
     }
 
+    // Close the modal explicitly—on mobile this ensures the view is updated
     $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none");
+      $(this).addClass("d-none").css("display", "none");
     });
     $("#swipe-zone").show();
-
-    updateHistory();
-    updateStats();
-    updateCompare();
   });
   
   $("#cancel-draw").click(function(){
     $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none");
+      $(this).addClass("d-none").css("display", "none");
     });
     $("#swipe-zone").show();
   });
 
   //===================== SHEETS BACKEND SUBMISSION =====================
-  function submitEntryToSheet(entry){
+  function submitEntryToSheet(entry, callback) {
     $.ajax({
       url: url_tracker,
       method: "POST",
@@ -311,6 +310,7 @@ $(document).ready(function(){
       },
       success: function(response){
         console.log("Entry submitted to Google Sheets: ", response);
+        if(callback) callback();
       },
       error: function(err){
         console.error("Error submitting entry to Google Sheets:", err);
@@ -327,8 +327,8 @@ $(document).ready(function(){
       let drawDate = new Date(entry.timestamp).toLocaleDateString();
       let diamondText = (entry.diamond === 0)
         ? `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw">`
-        : entry.diamond + "<img class='small-icon' src='assets/diamond.png'>";
-
+        : entry.diamond + "<img class='small-icon' src='assets/diamond.png' alt='Diamond'>";
+      
       let listItem = `
         <div class="history-card mb-3">
           <div class="d-flex justify-content-between align-items-center">
@@ -336,7 +336,7 @@ $(document).ready(function(){
               <div class="history-date">${drawDate}</div>
               <div class="history-details">
                 ${diamondText} → ${entry.crests}
-                <img src="assets/token.png" class="small-icon" alt="token">
+                <img src="assets/token.png" class="small-icon" alt="Token">
               </div>
             </div>
             <div>
@@ -352,14 +352,14 @@ $(document).ready(function(){
       historyList.append(listItem);
     });
 
-    // For the "Home" tab, show the same info
+    // Also update the "Home" tab draw list
     $("#draw-list").empty();
     localData[currentUser].forEach(function(entry){
       let drawDate = new Date(entry.timestamp).toLocaleDateString();
       let diamondText = (entry.diamond === 0)
         ? `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw">`
-        : entry.diamond + "<img class='small-icon' src='assets/diamond.png'>";
-
+        : entry.diamond + "<img class='small-icon' src='assets/diamond.png' alt='Diamond'>";
+      
       let card = `
         <div class="card mb-2">
           <div class="card-body d-flex align-items-center">
@@ -367,16 +367,10 @@ $(document).ready(function(){
               ${drawDate}: ${diamondText} → ${entry.crests}
               <img src="assets/token.png" alt="Token" class="small-icon">
             </p>
-            <button
-              class="btn btn-sm btn-outline-danger delete-entry"
-              data-id="${entry.id}"
-            >
+            <button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entry.id}">
               <i class="fa fa-trash"></i>
             </button>
-            <button
-              class="btn btn-sm btn-outline-primary edit-entry ms-2"
-              data-id="${entry.id}"
-            >
+            <button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entry.id}">
               <i class="fa fa-edit"></i>
             </button>
           </div>
@@ -385,32 +379,20 @@ $(document).ready(function(){
     });
   }
 
-  //===================== UPDATE STATS =====================
+  //===================== UPDATE STATS & CHARTS =====================
   function updateStats(){
     let entries = localData[currentUser];
     if(!entries) return;
 
-    // 1) Main bar chart (existing) → tokens or diamonds
     updateMainBarChart(entries);
-
-    // 2) Pie Chart: free vs diamond
     updatePieChart(entries);
-
-    // 3) Line Chart: tokens over time (moving average)
     updateLineChart(entries);
-
-    // 4) Distribution histogram
     updateHistogram(entries);
-
-    // 5) Diamond Tier bar chart
     updateTierChart(entries);
-
-    // 6) Advanced metrics in #advanced-list
     updateAdvancedMetrics(entries);
   }
 
   function updateMainBarChart(entries){
-    // Clean up old instance
     if(window.myChart){ window.myChart.destroy(); }
 
     if(statsView === "tokens"){
@@ -476,10 +458,8 @@ $(document).ready(function(){
     }
   }
 
-  //===================== 2) PIE CHART: FREE vs DIAMOND =====================
   function updatePieChart(entries){
     if(window.myPieChart) { window.myPieChart.destroy(); }
-
     let freeCount = entries.filter(e => e.diamond === 0).length;
     let diamondCount = entries.length - freeCount;
 
@@ -498,16 +478,12 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 3) LINE CHART: TOKENS OVER TIME (MOVING AVERAGE) =====================
   function updateLineChart(entries){
     if(window.myLineChart) { window.myLineChart.destroy(); }
-
     let sorted = [...entries].sort((a,b) => a.timestamp - b.timestamp);
-
     const windowSize = 3;
     let tokensArray = sorted.map(e => e.crests);
     let labels = sorted.map((e,i) => "D" + (i+1));
-
     let maData = [];
     for(let i = 0; i < tokensArray.length; i++){
       let start = Math.max(0, i - windowSize + 1);
@@ -515,7 +491,6 @@ $(document).ready(function(){
       let avg = subset.reduce((s, val) => s + val, 0) / subset.length;
       maData.push(avg);
     }
-
     window.myLineChart = new Chart(document.getElementById("stats-line"), {
       type: "line",
       data: {
@@ -537,20 +512,14 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 4) DISTRIBUTION HISTOGRAM =====================
   function updateHistogram(entries){
     if(window.myHistChart) { window.myHistChart.destroy(); }
-
-    // Count how many times each "crests" value occurs
     let distributionMap = {};
     entries.forEach(e => {
       distributionMap[e.crests] = (distributionMap[e.crests] || 0) + 1;
     });
-
-    // Sort crest values ascending
     let crestValues = Object.keys(distributionMap).map(v => parseInt(v)).sort((a,b)=>a-b);
     let frequencies = crestValues.map(v => distributionMap[v]);
-
     window.myHistChart = new Chart(document.getElementById("stats-hist"), {
       type: "bar",
       data: {
@@ -568,14 +537,11 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 5) BAR CHART BY DIAMOND TIER =====================
   function updateTierChart(entries){
     if(window.myTierChart) { window.myTierChart.destroy(); }
-
     let tiers = [0,25,50,450,500];
     let tierLabels = ["Free(0)","25💎","50💎","450💎","500💎"];
     let avgTokensForTier = [];
-
     tiers.forEach(t => {
       let subset = entries.filter(e => e.diamond === t);
       if(subset.length === 0){
@@ -585,7 +551,6 @@ $(document).ready(function(){
         avgTokensForTier.push( sum / subset.length );
       }
     });
-
     window.myTierChart = new Chart(document.getElementById("stats-tier"), {
       type: "bar",
       data: {
@@ -603,37 +568,18 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 6) ADVANCED METRICS =====================
   function updateAdvancedMetrics(entries){
-    // Basic calculations
     let totalDraws = entries.length;
     let totalFree = entries.filter(e => e.diamond === 0).length;
     let totalDiamond = totalDraws - totalFree;
     let totalCrests = entries.reduce((acc,e)=>acc+e.crests,0);
-    let totalDiamondsSpent = entries.reduce((acc,e)=>acc+(e.diamond>0? e.diamond:0),0);
-  
-    let tokensPerDraw = (totalDraws === 0)? 0 : (totalCrests / totalDraws);
-  
-    // Best draw
+    let tokensPerDraw = totalDraws === 0 ? 0 : totalCrests / totalDraws;
     let best = entries.reduce((b, e) => e.crests > b.crests ? e : b, {crests:-Infinity});
     let bestDraw = (best.crests === -Infinity) ? null : best;
-  
-    // Luck Score
-    let avgTokens = tokensPerDraw;
-    let luckStatus = "";
-
-    if(avgTokens > 9){
-      luckStatus = "Lucky";
-    } else if(avgTokens < 9){
-      luckStatus = "Unlucky";
-    } else {
-      luckStatus = "Average";
-    }
-
-  
-    // Build a grid of metric cards with images
+    let luckStatus = "Average";
+    if(tokensPerDraw > 9){ luckStatus = "Lucky"; }
+    else if(tokensPerDraw < 9){ luckStatus = "Unlucky"; }
     let advHtml = `
-      <!-- 1) Total Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Total Draws</span>
@@ -642,31 +588,24 @@ $(document).ready(function(){
         <div class="metric-value">${totalDraws}</div>
       </div>
   
-      <!-- 2) Free Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Free Draws</span>
           <img src="assets/mystical_dial.png" class="metric-icon" alt="Free" />
         </div>
         <div class="metric-value">${totalFree}</div>
-        <div class="metric-note">
-          ${( (totalFree/totalDraws)*100 || 0 ).toFixed(1)}%
-        </div>
+        <div class="metric-note">${((totalFree/totalDraws)*100 || 0).toFixed(1)}%</div>
       </div>
   
-      <!-- 3) Diamond Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Diamond Draws</span>
           <img src="assets/diamond.png" class="metric-icon" alt="Diamond" />
         </div>
         <div class="metric-value">${totalDiamond}</div>
-        <div class="metric-note">
-          ${( (totalDiamond/totalDraws)*100 || 0 ).toFixed(1)}%
-        </div>
+        <div class="metric-note">${((totalDiamond/totalDraws)*100 || 0).toFixed(1)}%</div>
       </div>
   
-      <!-- 4) Tokens per Draw -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Tokens/Draw</span>
@@ -674,45 +613,33 @@ $(document).ready(function(){
         </div>
         <div class="metric-value">${tokensPerDraw.toFixed(2)}</div>
       </div>
-  
-
     `;
-  
-    // Best Draw
     if(bestDraw){
       advHtml += `
         <div class="metric-card">
           <div class="metric-label">
             <span>Best Draw</span>
-            <img src="assets/token.png" class="metric-icon" alt="Best Token" />
+            <img src="assets/token.png" class="metric-icon" alt="Token" />
           </div>
           <div class="metric-value">${bestDraw.crests}</div>
           <div class="metric-note">
-            ${bestDraw.diamond>0 ? `(${bestDraw.diamond}💎)` : `(Free)`}
+            ${bestDraw.diamond>0 ? `(${bestDraw.diamond}💎)` : `<img src="assets/mystical_dial.png" class="metric-icon" alt="Free">`}
           </div>
         </div>
       `;
     }
-  
-    // Luck Score
     advHtml += `
-    <div class="metric-card">
-      <div class="metric-label">
-        <span>Luck Score™</span>
-        <img src="assets/mystical_dial.png" class="metric-icon" alt="Luck" />
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>Luck Score™</span>
+          <img src="assets/mystical_dial.png" class="metric-icon" alt="Luck" />
+        </div>
+        <div class="metric-value">${luckStatus}</div>
+        <div class="metric-note">${tokensPerDraw.toFixed(2)} tokens/draw</div>
       </div>
-      <div class="metric-value">${luckStatus}</div>
-      <div class="metric-note">
-        ${avgTokens.toFixed(2)} tokens/draw
-      </div>
-    </div>
-  `;
-  
-  
+    `;
     $("#advanced-metrics-grid").html(advHtml);
   }
-  
-  
 
   //===================== COMPARE =====================
   function updateCompare(){
@@ -740,106 +667,74 @@ $(document).ready(function(){
   }
   
   function buildMetricsHTML(m){
-    let freePercent = (m.totalDraws === 0) 
-      ? 0 
-      : (m.totalFree / m.totalDraws) * 100;
-    let diamondPercent = (m.totalDraws === 0) 
-      ? 0 
-      : (m.totalDiamond / m.totalDraws) * 100;
-  
+    let freePercent = m.totalDraws === 0 ? 0 : (m.totalFree / m.totalDraws) * 100;
+    let diamondPercent = m.totalDraws === 0 ? 0 : (m.totalDiamond / m.totalDraws) * 100;
     let bestDrawHTML = "";
     if(m.bestDraw){
       bestDrawHTML = `
         <div class="metric-card">
           <div class="metric-label">
-            Best Draw <img src="assets/token.png" class="metric-icon" alt="token" />
+            Best Draw <img src="assets/token.png" class="metric-icon" alt="Token" />
           </div>
           <div class="metric-value">${m.bestDraw.crests}</div>
           <div class="metric-note">
-            ${m.bestDraw.diamond>0 ? `(${m.bestDraw.diamond}💎)` : "(Free)"}
+            ${m.bestDraw.diamond>0 ? `(${m.bestDraw.diamond}💎)` : `<img src="assets/mystical_dial.png" class="metric-icon" alt="Free">`}
           </div>
         </div>
       `;
     }
-  
     return `
       <div class="metric-card">
         <div class="metric-label">
-          Total Draws
-          <img src="assets/mystical_dial.png" class="metric-icon" alt="Dial" />
+          Total Draws <img src="assets/mystical_dial.png" class="metric-icon" alt="Dial" />
         </div>
         <div class="metric-value">${m.totalDraws}</div>
       </div>
-  
       <div class="metric-card">
         <div class="metric-label">
-          Free Draws
-          <img src="assets/mystical_dial.png" class="metric-icon" alt="Free" />
+          Free Draws <img src="assets/mystical_dial.png" class="metric-icon" alt="Free" />
         </div>
         <div class="metric-value">${m.totalFree}</div>
         <div class="metric-note">${freePercent.toFixed(1)}%</div>
       </div>
-  
       <div class="metric-card">
         <div class="metric-label">
-          Diamond Draws
-          <img src="assets/diamond.png" class="metric-icon" alt="diamond" />
+          Diamond Draws <img src="assets/diamond.png" class="metric-icon" alt="Diamond" />
         </div>
         <div class="metric-value">${m.totalDiamond}</div>
         <div class="metric-note">${diamondPercent.toFixed(1)}%</div>
       </div>
-  
       <div class="metric-card">
         <div class="metric-label">
-          Avg Tokens
-          <img src="assets/token.png" class="metric-icon" alt="Token" />
+          Avg Tokens <img src="assets/token.png" class="metric-icon" alt="Token" />
         </div>
         <div class="metric-value">${m.tokensPerDraw.toFixed(2)}</div>
       </div>
-  
       ${bestDrawHTML}
-  
       <div class="metric-card">
         <div class="metric-label">
-          Luck Score™
-          <img src="assets/mystical_dial.png" class="metric-icon" alt="Luck" />
+          Luck Score™ <img src="assets/mystical_dial.png" class="metric-icon" alt="Luck" />
         </div>
         <div class="metric-value">${m.luckStatus}</div>
-        <div class="metric-note">
-          ${m.tokensPerDraw.toFixed(2)} tokens/draw
-        </div>
+        <div class="metric-note">${m.tokensPerDraw.toFixed(2)} tokens/draw</div>
       </div>
     `;
   }
   
-
   function computeMetrics(entries){
     let totalDraws = entries.length;
     let totalFree = entries.filter(e => e.diamond === 0).length;
     let totalDiamond = totalDraws - totalFree;
     let totalCrests = entries.reduce((acc,e)=>acc+e.crests,0);
     let tokensPerDraw = totalDraws === 0 ? 0 : totalCrests / totalDraws;
-  
     let best = entries.reduce((b, e) => e.crests > b.crests ? e : b, {crests:-Infinity});
-    let bestDraw = (best.crests === -Infinity) ? null : best;
-  
+    let bestDraw = best.crests === -Infinity ? null : best;
     let luckStatus = "Average";
     if(tokensPerDraw > 9){ luckStatus = "Lucky"; }
     else if(tokensPerDraw < 9){ luckStatus = "Unlucky"; }
-  
-    return {
-      totalDraws,
-      totalFree,
-      totalDiamond,
-      totalCrests,
-      bestDraw,
-      tokensPerDraw,
-      luckStatus
-    };
+    return { totalDraws, totalFree, totalDiamond, totalCrests, bestDraw, tokensPerDraw, luckStatus };
   }
   
-  
-
   //===================== DELETE ENTRY =====================
   $(document).on("click", ".delete-entry", function() {
     const id = $(this).data("id"); 
@@ -847,12 +742,8 @@ $(document).ready(function(){
       console.warn("No ID found on this entry — cannot delete from sheet.");
       return;
     }
-
     if (confirm("Are you sure you want to delete this entry?")) {
-      $.post(url_tracker, {
-        action: "delete",
-        id: id
-      }, function(response) {
+      $.post(url_tracker, { action: "delete", id: id }, function(response) {
         console.log("Delete response:", response);
         fetchRemoteData(() => {
           updateHistory();
@@ -871,7 +762,6 @@ $(document).ready(function(){
       console.warn("Could not find local entry with id:", id);
       return;
     }
-
     const newDiamond = prompt("Edit Diamonds:", entry.diamond);
     const newCrests = prompt("Edit Crests:", entry.crests);
     if(newDiamond !== null && newCrests !== null){
