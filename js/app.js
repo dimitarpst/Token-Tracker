@@ -164,8 +164,7 @@ $(document).ready(function(){
     $("#crestValue").text(minValue);
 
     if(ctx){ drawRing(minValue); }
-    $("#draw-input-screen").removeClass("d-none").css("display","flex").hide().fadeIn(300);
-    $("#swipe-zone").hide();
+    // Since this panel is static, there is no need to show or hide it.
   });
 
   //===================== EXTENDED MODE =====================
@@ -256,49 +255,6 @@ $(document).ready(function(){
   radialCanvas?.addEventListener("touchcancel", pointerUp);
 
   //===================== SUBMIT / CANCEL DRAW =====================
-  $("#submit-draw").click(function(){
-    let entry = {
-      diamond: currentDiamond,
-      crests: crestValue,
-      timestamp: Date.now(),
-      User: currentUser
-    };
-
-    localData[currentUser].push({
-      id: null, 
-      diamond: entry.diamond,
-      crests: entry.crests,
-      user: currentUser,
-      timestamp: entry.timestamp
-    });
-
-    submitEntryToSheet(entry);
-
-    if("Notification" in window && Notification.permission === "granted"){
-      new Notification("Draw Recorded", {
-        body: "You gained " + crestValue + " tokens!",
-        icon: "assets/token.png"
-      });
-    }
-
-    $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none");
-    });
-    $("#swipe-zone").show();
-
-    updateHistory();
-    updateStats();
-    updateCompare();
-  });
-  
-  $("#cancel-draw").click(function(){
-    $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none");
-    });
-    $("#swipe-zone").show();
-  });
-
-  //===================== SHEETS BACKEND SUBMISSION =====================
   function submitEntryToSheet(entry){
     $.ajax({
       url: url_tracker,
@@ -317,6 +273,58 @@ $(document).ready(function(){
       }
     });
   }
+  
+  $("#submit-draw").click(function(){
+    if(confirm("Are you sure you want to record this draw?")){
+      let entry = {
+        diamond: currentDiamond,
+        crests: crestValue,
+        timestamp: Date.now(),
+        User: currentUser
+      };
+
+      localData[currentUser].push({
+        id: null, 
+        diamond: entry.diamond,
+        crests: entry.crests,
+        user: currentUser,
+        timestamp: entry.timestamp
+      });
+
+      submitEntryToSheet(entry);
+
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("Draw Recorded", {
+          body: "You gained " + crestValue + " tokens!",
+          icon: "assets/token.png"
+        });
+      }
+
+      // Reset static input panel
+      currentDiamond = null;
+      $("#selected-draw-label").text("");
+      maxValue = 20;
+      crestValue = minValue;
+      $("#crestValue").text(minValue);
+      if(ctx){ drawRing(minValue); }
+
+      updateHistory();
+      updateStats();
+      updateCompare();
+    }
+  });
+  
+  $("#cancel-draw").click(function(){
+    if(confirm("Are you sure you want to cancel this draw?")){
+      // Reset static input panel
+      currentDiamond = null;
+      $("#selected-draw-label").text("");
+      maxValue = 20;
+      crestValue = minValue;
+      $("#crestValue").text(minValue);
+      if(ctx){ drawRing(minValue); }
+    }
+  });
 
   //===================== UPDATE HISTORY =====================
   function updateHistory(){
@@ -367,16 +375,10 @@ $(document).ready(function(){
               ${drawDate}: ${diamondText} → ${entry.crests}
               <img src="assets/token.png" alt="Token" class="small-icon">
             </p>
-            <button
-              class="btn btn-sm btn-outline-danger delete-entry"
-              data-id="${entry.id}"
-            >
+            <button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entry.id}">
               <i class="fa fa-trash"></i>
             </button>
-            <button
-              class="btn btn-sm btn-outline-primary edit-entry ms-2"
-              data-id="${entry.id}"
-            >
+            <button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entry.id}">
               <i class="fa fa-edit"></i>
             </button>
           </div>
@@ -390,7 +392,7 @@ $(document).ready(function(){
     let entries = localData[currentUser];
     if(!entries) return;
 
-    // 1) Main bar chart (existing) → tokens or diamonds
+    // 1) Main bar chart → tokens or diamonds
     updateMainBarChart(entries);
 
     // 2) Pie Chart: free vs diamond
@@ -410,7 +412,6 @@ $(document).ready(function(){
   }
 
   function updateMainBarChart(entries){
-    // Clean up old instance
     if(window.myChart){ window.myChart.destroy(); }
 
     if(statsView === "tokens"){
@@ -476,7 +477,6 @@ $(document).ready(function(){
     }
   }
 
-  //===================== 2) PIE CHART: FREE vs DIAMOND =====================
   function updatePieChart(entries){
     if(window.myPieChart) { window.myPieChart.destroy(); }
 
@@ -498,7 +498,6 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 3) LINE CHART: TOKENS OVER TIME (MOVING AVERAGE) =====================
   function updateLineChart(entries){
     if(window.myLineChart) { window.myLineChart.destroy(); }
 
@@ -537,17 +536,14 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 4) DISTRIBUTION HISTOGRAM =====================
   function updateHistogram(entries){
     if(window.myHistChart) { window.myHistChart.destroy(); }
 
-    // Count how many times each "crests" value occurs
     let distributionMap = {};
     entries.forEach(e => {
       distributionMap[e.crests] = (distributionMap[e.crests] || 0) + 1;
     });
 
-    // Sort crest values ascending
     let crestValues = Object.keys(distributionMap).map(v => parseInt(v)).sort((a,b)=>a-b);
     let frequencies = crestValues.map(v => distributionMap[v]);
 
@@ -568,7 +564,6 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 5) BAR CHART BY DIAMOND TIER =====================
   function updateTierChart(entries){
     if(window.myTierChart) { window.myTierChart.destroy(); }
 
@@ -603,9 +598,7 @@ $(document).ready(function(){
     });
   }
 
-  //===================== 6) ADVANCED METRICS =====================
   function updateAdvancedMetrics(entries){
-    // Basic calculations
     let totalDraws = entries.length;
     let totalFree = entries.filter(e => e.diamond === 0).length;
     let totalDiamond = totalDraws - totalFree;
@@ -614,14 +607,11 @@ $(document).ready(function(){
   
     let tokensPerDraw = (totalDraws === 0)? 0 : (totalCrests / totalDraws);
   
-    // Best draw
     let best = entries.reduce((b, e) => e.crests > b.crests ? e : b, {crests:-Infinity});
     let bestDraw = (best.crests === -Infinity) ? null : best;
   
-    // Luck Score
     let avgTokens = tokensPerDraw;
     let luckStatus = "";
-
     if(avgTokens > 9){
       luckStatus = "Lucky";
     } else if(avgTokens < 9){
@@ -629,11 +619,8 @@ $(document).ready(function(){
     } else {
       luckStatus = "Average";
     }
-
   
-    // Build a grid of metric cards with images
     let advHtml = `
-      <!-- 1) Total Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Total Draws</span>
@@ -642,7 +629,6 @@ $(document).ready(function(){
         <div class="metric-value">${totalDraws}</div>
       </div>
   
-      <!-- 2) Free Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Free Draws</span>
@@ -654,7 +640,6 @@ $(document).ready(function(){
         </div>
       </div>
   
-      <!-- 3) Diamond Draws -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Diamond Draws</span>
@@ -666,7 +651,6 @@ $(document).ready(function(){
         </div>
       </div>
   
-      <!-- 4) Tokens per Draw -->
       <div class="metric-card">
         <div class="metric-label">
           <span>Tokens/Draw</span>
@@ -674,11 +658,8 @@ $(document).ready(function(){
         </div>
         <div class="metric-value">${tokensPerDraw.toFixed(2)}</div>
       </div>
-  
-
     `;
   
-    // Best Draw
     if(bestDraw){
       advHtml += `
         <div class="metric-card">
@@ -694,7 +675,6 @@ $(document).ready(function(){
       `;
     }
   
-    // Luck Score
     advHtml += `
     <div class="metric-card">
       <div class="metric-label">
@@ -708,12 +688,9 @@ $(document).ready(function(){
     </div>
   `;
   
-  
     $("#advanced-metrics-grid").html(advHtml);
   }
   
-  
-
   //===================== COMPARE =====================
   function updateCompare(){
     let compareHTML = `
@@ -812,7 +789,6 @@ $(document).ready(function(){
     `;
   }
   
-
   function computeMetrics(entries){
     let totalDraws = entries.length;
     let totalFree = entries.filter(e => e.diamond === 0).length;
@@ -838,8 +814,6 @@ $(document).ready(function(){
     };
   }
   
-  
-
   //===================== DELETE ENTRY =====================
   $(document).on("click", ".delete-entry", function() {
     const id = $(this).data("id"); 
@@ -902,7 +876,7 @@ $(document).ready(function(){
     currentX = e.originalEvent.touches[0].clientX;
   });
   $(document).on("touchend", function(){
-    if(!$("#draw-input-screen").hasClass("d-none")){
+    if(!$("#draw-input-static").length){
       startX = null;
       return;
     }

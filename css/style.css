@@ -29,7 +29,7 @@ body.aylin {
 }
 #welcome-screen {
   position: fixed;
-  top: 0; 
+  top: 0;
   left: 0;
   height: 100vh; 
   width: 100%;
@@ -177,20 +177,14 @@ body.aylin {
   pointer-events: auto;
 }
 
-#draw-input-screen {
-  position: fixed; 
-  top: 0; 
-  left: 0;
-  width: 100vw; 
-  height: 100vh;
-  background: rgba(0,0,0,0.8);
-  z-index: 3000;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(10px);
-  animation: fadeIn 0.3s ease;
+#draw-input-static {
+  margin: 20px auto;
+  padding: 20px;
+  text-align: center;
+  background: rgb(0 0 0 / 50%);;
+  border-radius: 20px;
 }
+
 .radial-container {
   text-align: center;
   padding: 30px;
@@ -290,18 +284,15 @@ body.aylin {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   transition: transform 0.2s ease;
 }
-
 .history-card:hover {
   transform: translateY(-2px);
 }
-
 .history-date {
   font-weight: bold;
   font-size: 1rem;
   color: #d63384;
   margin-bottom: 5px;
 }
-
 .history-details {
   font-size: 1.1rem;
   color: #333;
@@ -309,24 +300,20 @@ body.aylin {
   align-items: center;
   line-height: 1;
 }
-
 .history-card .btn {
   padding: 6px 10px;
 }
-
 .card.mb-3.p-2{
   background: linear-gradient(135deg, #FFD4D4, #FFF5F5);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
-
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 1rem;
 }
-
 .metric-card {
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -336,11 +323,9 @@ body.aylin {
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: transform 0.2s ease;
 }
-
 .metric-card:hover {
   transform: scale(1.02);
 }
-
 .metric-label {
   font-size: 0.9rem;
   font-weight: bold;
@@ -350,31 +335,26 @@ body.aylin {
   justify-content: center;
   gap: 5px;
 }
-
 .metric-value {
   font-size: 1.2rem;
   font-weight: 600;
   color: #FFD4D4;
 }
-
 .metric-note {
   font-size: 0.8rem;
   color: #ffc0cb;
   margin-top: 2px;
 }
-
 .metric-icon {
   width: 16px;
   height: 16px;
   vertical-align: middle;
 }
-
 .compare-row {
   display: flex;
   gap: 2rem;
   flex-wrap: wrap; 
 }
-
 .compare-column {
   flex: 1 1 300px;
   background: rgba(0, 0, 0, 0.5);
