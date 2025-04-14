@@ -1,13 +1,3 @@
-function log(...args) {
-  const message = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
-  console.log(...args); // Still logs to the console
-  const el = document.getElementById('debug-log');
-  if (el) {
-    el.innerHTML += message + '<br>';
-    el.scrollTop = el.scrollHeight; // auto scroll
-  }
-}
-
 let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
 $(document).ready(function(){
   // Request notification permission if available
@@ -298,9 +288,7 @@ $(document).ready(function(){
     }
 
     // Close the modal explicitly—on mobile this ensures the view is updated
-    $("#draw-input-screen").fadeOut(300, function(){
-      $(this).addClass("d-none").css("display", "none");
-    });
+    $("#draw-input-screen").addClass("d-none").removeAttr("style");
     $("#swipe-zone").show();
   });
   
@@ -323,7 +311,7 @@ $(document).ready(function(){
         User: entry.User
       },
       success: function(response){
-        log("Entry submitted to Google Sheets: ", response);
+        console.log("Entry submitted to Google Sheets: ", response);
         if(callback) callback();
       },
       error: function(err){
