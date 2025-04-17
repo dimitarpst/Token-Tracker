@@ -55,6 +55,8 @@
 
     <div id="top-bar" class="d-flex align-items-center text-light px-3">
       <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
+      <img id="navbar-current-user-img" src="" alt="User" class="ms-auto me-3" style="height: 35px; width: auto; border-radius: 50%;">
+
       <button id="open-sidebar" class="btn btn-link text-light ms-auto">
         <i class="fa-solid fa-bars"></i>
       </button>
@@ -181,13 +183,15 @@
         </div>
       </section>
 
-      <section id="tab-settings" class="tab-content d-none">
-        <h3 class="mt-3 text-light">Settings</h3>
-        <div class="container">
-          <button id="change-user" class="btn btn-outline-light">Change User</button>
-          <button id="reset-data" class="btn btn-outline-light mt-2">Reset Data</button>
+      <div id="tab-settings" class="tab-content d-none">
+        <div class="container mt-3">
+            <h4 class="mb-3 text-light">Settings</h4>
+            <button id="change-user" class="btn btn-warning mb-2 w-100">Change User</button>
+            <button id="reset-data" class="btn btn-danger mb-2 w-100">Reset Local Data</button>
+    
+            <img id="navbar-current-user-img" src="" alt="User" class="ms-auto me-3" style="height: 35px; width: auto; border-radius: 50%;">    
         </div>
-      </section>
+    </div>
     </div>
   </div>
 

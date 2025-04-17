@@ -362,3 +362,60 @@ body.aylin {
   border-radius: 8px;
   min-width: 260px;
 }
+
+/* ======================================== */
+/* === СТИЛОВЕ САМО ЗА COMPARE СТРАНИЦА === */
+/* ======================================== */
+
+/* Layout for Compare Columns */
+.compare-row {
+  display: flex;
+  flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
+  gap: 1rem;       /* Space between columns */
+  justify-content: center;
+}
+
+.compare-column {
+  flex: 1 1 300px; /* Allow columns to grow/shrink, base width 300px */
+  min-width: 280px; /* Minimum width before wrapping */
+  background: rgba(0, 0, 0, 0.5); /* Use original dark background for columns */
+  padding: 1rem;
+  border-radius: 8px; /* Use original border-radius from metric cards maybe? */
+}
+
+/* User icon in Compare column header */
+.compare-user-icon {
+    width: 24px; /* Adjust size as needed */
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.3); /* Subtle border */
+}
+
+/* Styling for the leading metric card in Compare */
+.compare-column .metric-card.compare-leader {
+    background-color: rgba(255, 255, 255, 0.2); /* Slightly brighter background */
+    /* Add a subtle border or shadow if desired */
+    border: 1px solid rgba(255, 212, 212, 0.7); /* Example: Light pink border */
+    box-shadow: 0 0 8px rgba(255, 212, 212, 0.3); /* Example: Faint glow */
+}
+
+/* Optional: Slightly bolder text for leader value */
+.compare-column .metric-card.compare-leader .metric-value {
+    /* color: #FFD4D4; */ /* Already pinkish, maybe make it brighter white? */
+    color: #ffffff;
+    font-weight: 700; /* Make it bolder */
+}
+
+/* Optional: Style for Syncing Indicator */
+.sync-indicator {
+    font-size: 0.8rem;
+    display: inline-block;
+    width: 40px; /* Give it some space */
+    text-align: center;
+}
+/* Optional: Style for Sync Failed Items */
+.history-card.sync-failed {
+    opacity: 0.7;
+    border-left: 3px solid #dc3545; /* Example: Red border */
+}
