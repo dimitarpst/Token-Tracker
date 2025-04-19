@@ -212,7 +212,6 @@ body.aylin {
 .character-img {
   width: 100%;
   height: auto;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 #welcome-screen {
@@ -385,8 +384,8 @@ body.aylin {
 
 /* User icon in Compare column header */
 .compare-user-icon {
-    width: 24px; /* Adjust size as needed */
-    height: 24px;
+    width: 200px; /* Adjust size as needed */
+    height: 200px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid rgba(255,255,255,0.3); /* Subtle border */

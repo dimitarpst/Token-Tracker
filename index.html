@@ -55,9 +55,9 @@
 
     <div id="top-bar" class="d-flex align-items-center text-light px-3">
       <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
-      <img id="navbar-current-user-img" src="" alt="User" class="ms-auto me-3" style="height: 35px; width: auto; border-radius: 50%;">
+      <img id="navbar-current-user-img" src="" alt="User" class="ms-auto" style="height: 100%; object-fit: cover;">
 
-      <button id="open-sidebar" class="btn btn-link text-light ms-auto">
+      <button id="open-sidebar" class="btn btn-link text-light">
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
@@ -189,7 +189,9 @@
             <button id="change-user" class="btn btn-warning mb-2 w-100">Change User</button>
             <button id="reset-data" class="btn btn-danger mb-2 w-100">Reset Local Data</button>
     
-            <img id="navbar-current-user-img" src="" alt="User" class="ms-auto me-3" style="height: 35px; width: auto; border-radius: 50%;">    
+            <p class="text-light mt-3 d-flex align-items-center flex-column"> Currently logged in as:
+              <img id="settings-current-user-img" src="" alt="Current User" class="ms-2" style="height: 220px; width: 100%;">
+              </p>
         </div>
     </div>
     </div>

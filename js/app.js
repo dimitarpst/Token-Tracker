@@ -62,8 +62,8 @@ $(document).ready(function() {
 
       let charImg = (user === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
 
-      $("#settings-current-user").text(user); // Update settings page display
-      $("#navbar-current-user").text(user);   // Update navbar display
+      $("#settings-current-user-img").attr("src", charImg);
+      $("#navbar-current-user-img").attr("src", charImg); 
 
       if ($("#character-image").length) {
           $("#character-image").attr("src", charImg);
@@ -1200,13 +1200,13 @@ $(document).ready(function() {
       compareContainer.html(`
           <div class="compare-row">
               <div class="compare-column" id="compare-mitko-col">
-                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center">
+                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
                       <img src="assets/fredrinn.png" alt="Mitko" class="compare-user-icon me-2" /> Mitko
                   </h5>
                   <div class="metrics-grid" id="compare-mitko-grid"></div>
               </div>
               <div class="compare-column" id="compare-aylin-col">
-                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center">
+                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
                       <img src="assets/lylia.png" alt="Aylin" class="compare-user-icon me-2" /> Aylin
                   </h5>
                   <div class="metrics-grid" id="compare-aylin-grid"></div>
