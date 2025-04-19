@@ -20,8 +20,11 @@ $(document).ready(function() {
   };
   let currentUser = localStorage.getItem("currentUser");
   let currentDiamond = null;
+  let inSessionMode = false;
+  let sessionEntries = []; // Holds entry objects {diamond, crests, timestamp, User, tempId, synced?}
   let statsView = "tokens";
-
+  const SESSION_MODE_KEY = 'drawTrackerSessionMode';
+  const SESSION_ENTRIES_KEY = 'drawTrackerSessionEntries';
   let minValue = 0;
   let maxValue = 20;
   let crestValue = minValue;
@@ -31,7 +34,7 @@ $(document).ready(function() {
   const centerY = radialCanvas ? radialCanvas.height / 2 : 0;
   const radius = 100;
   const lineWidth = 20;
-
+  const LAST_ACTIVE_TAB_KEY = 'drawTrackerLastActiveTab';
   if (!currentUser) {
       $("#welcome-screen").removeClass("d-none");
       $("#main-app").addClass("d-none");
@@ -56,50 +59,95 @@ $(document).ready(function() {
   //===================== INIT USER =====================
 
   function initUser(user) {
-      $("body")
-          .removeClass("mitko aylin")
-          .addClass(user.toLowerCase());
+    $("body")
+        .removeClass("mitko aylin")
+        .addClass(user.toLowerCase());
 
-      let charImg = (user === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
+    let charImg = (user === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
 
-      $("#settings-current-user-img").attr("src", charImg);
-      $("#navbar-current-user-img").attr("src", charImg); 
+    $("#settings-current-user-img").attr("src", charImg);
+    $("#navbar-current-user-img").attr("src", charImg);
 
-      if ($("#character-image").length) {
-          $("#character-image").attr("src", charImg);
-      }
+    if ($("#character-image").length) {
+        $("#character-image").attr("src", charImg);
+    }
 
-      if (ctx) {
-          drawRing(minValue);
-      }
+    // --- Load and Restore Session State (Keep this logic) ---
+    try {
+        const savedSessionMode = localStorage.getItem(SESSION_MODE_KEY) === 'true';
+        const savedSessionEntries = JSON.parse(localStorage.getItem(SESSION_ENTRIES_KEY) || '[]');
 
-      fetchRemoteData(() => {
-          updateHistory();
-          updateStats();
-          updateCompare();
-          updateHomeDrawList();
+        if (savedSessionMode && Array.isArray(savedSessionEntries)) {
+            console.log("Restoring previous session state...");
+            inSessionMode = true;
+            sessionEntries = savedSessionEntries;
+            $("#toggle-session-mode").addClass('active').html('<i class="fa-solid fa-circle-stop"></i> End Session Entry');
+            $("#session-entries-container").removeClass("d-none");
+            renderSessionList();
+        } else {
+            inSessionMode = false;
+            sessionEntries = [];
+            localStorage.removeItem(SESSION_MODE_KEY);
+            localStorage.removeItem(SESSION_ENTRIES_KEY);
+            $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
+            $("#session-entries-container").addClass("d-none");
+             renderSessionList(); // Render empty state
+        }
+    } catch (e) {
+         console.error("Error loading session state from localStorage:", e);
+         inSessionMode = false;
+         sessionEntries = [];
+         localStorage.removeItem(SESSION_MODE_KEY);
+         localStorage.removeItem(SESSION_ENTRIES_KEY);
+    }
+    // --- End Load/Restore Session State ---
 
-          if ($(".tab-content:not(.d-none)").length === 0) {
-              $("#tab-home").removeClass("d-none");
-              $("#sidebar .nav-link").removeClass('active');
-              $("#sidebar .nav-link[data-tab='home']").addClass('active');
-          } else {
-              let visibleTabId = $(".tab-content:not(.d-none)")
-                  .first()
-                  .attr('id')
-                  ?.replace('tab-', '');
+    // --- DETERMINE AND SET INITIAL ACTIVE TAB ---
+    let initialTabId = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
+    const validTabIds = ['home', 'history', 'stats', 'compare', 'settings']; // List of valid tab IDs
+    const defaultTabId = 'home';
 
-              if (visibleTabId) {
-                  $("#sidebar .nav-link").removeClass('active');
-                  $(`#sidebar .nav-link[data-tab='${visibleTabId}']`).addClass('active');
-              } else {
-                  $("#tab-home").removeClass("d-none");
-                  $("#sidebar .nav-link").removeClass('active');
-                  $("#sidebar .nav-link[data-tab='home']").addClass('active');
-              }
-          }
-      });
-  }
+    // Validate saved tab ID, default to 'home' if invalid or missing
+    if (!initialTabId || !validTabIds.includes(initialTabId)) {
+        initialTabId = defaultTabId;
+        // Optionally save the default back if it was invalid/missing
+        // localStorage.setItem(LAST_ACTIVE_TAB_KEY, initialTabId);
+    }
+     console.log(`Restoring last active tab: ${initialTabId}`);
+
+    // Ensure all tabs are hidden first, then show the target one
+    $(".tab-content").addClass("d-none");
+    $("#tab-" + initialTabId).removeClass("d-none"); // Make target tab visible
+
+    // Update sidebar link highlight to match the loaded tab
+    $("#sidebar .nav-link").removeClass('active');
+    $(`#sidebar .nav-link[data-tab='${initialTabId}']`).addClass('active');
+    // --- END SET INITIAL ACTIVE TAB ---
+
+    // Reset draw input state (slider, etc.) for consistency on load
+    if (ctx) {
+        drawRing(minValue);
+    }
+     maxValue = 20; // Default max value
+     crestValue = minValue;
+     $("#crestValue").text(crestValue);
+     $("#extendedMode").prop("checked", false);
+     $("#slider-container").addClass("d-none");
+     $("#preset-buttons-container").removeClass("d-none");
+     $(".preset-crest-btn").removeClass('active');
+     // currentDiamond = null; // Maybe reset selected draw type too? Or keep it? Let's keep it for now.
+     // $(".draw-option").removeClass('active');
+
+
+    // Fetch remote data and update relevant content areas
+    fetchRemoteData(() => {
+        // These functions update the *content* of the tabs, regardless of which is visible
+        updateHistory();
+        updateStats();
+        updateCompare();
+         // The tab visibility and sidebar highlight are already set above based on localStorage
+    });
+}
 
   //===================== FETCH REMOTE DATA =====================
 
@@ -200,6 +248,8 @@ $(document).ready(function() {
           .hide()
           .fadeIn(150);
 
+    localStorage.setItem(LAST_ACTIVE_TAB_KEY, tabId);
+
       $("#sidebar").removeClass("open");
       $("#overlay").stop().fadeOut(300);
 
@@ -213,9 +263,7 @@ $(document).ready(function() {
           case 'history':
               updateHistory();
               break;
-          case 'home':
-              updateHomeDrawList();
-              break;
+
       }
   });
 
@@ -233,7 +281,6 @@ $(document).ready(function() {
               updateHistory();
               updateStats();
               updateCompare();
-              updateHomeDrawList();
               alert(`Local data for ${currentUser} reset!`);
           } else {
               alert("No user selected or data empty.");
@@ -265,36 +312,114 @@ $(document).ready(function() {
   //===================== DRAW OPTION =====================
 
   $(".draw-option").click(function() {
+    $(".draw-option").removeClass('active'); // Remove active class from all buttons first
+
       const diamond = parseInt($(this).data("diamond"));
       currentDiamond = diamond;
+
+      $(this).addClass('active'); // Add active class to the clicked button
 
       const label = (diamond === 0) ? "Free Draw" : diamond + " Diamonds";
       $("#selected-draw-label").text(label);
       $("#draw-type-icon").attr("src", diamond === 0 ? "assets/mystical_dial.png" : "assets/diamond.png");
 
-      $("#extendedMode").prop("checked", false);
-      maxValue = 20;
-      crestValue = minValue;
-      $("#crestValue").text(minValue);
-
-      if (ctx) {
-          drawRing(minValue);
-      }
+        // Reset crest selection when changing draw type
+        $("#extendedMode").prop("checked", false); // Ensure extended is off
+        maxValue = 20;
+        $("#slider-container").addClass("d-none"); // Ensure slider is hidden
+        $("#preset-buttons-container").removeClass("d-none"); // Ensure presets are shown
+        crestValue = minValue; // Reset crest value
+        $("#crestValue").text(crestValue); // Update display
+        $(".preset-crest-btn").removeClass('active'); // Deactivate any active preset button
+        if (ctx) {
+            drawRing(minValue); // Reset slider visual just in case
+        }
   });
+
+  //===================== SESSION MODE TOGGLE =====================
+$("#toggle-session-mode").click(function() {
+    inSessionMode = !inSessionMode; // Toggle the state
+    localStorage.setItem(SESSION_MODE_KEY, inSessionMode); // Save the new state
+
+    if (inSessionMode) {
+        // --- Entering Session Mode ---
+        $(this).addClass('active').html('<i class="fa-solid fa-circle-stop"></i> End Session Entry');
+        $("#session-entries-container").removeClass("d-none");
+        // Load entries from storage *in case* they weren't loaded on init (e.g., manual clear)
+         try {
+             const storedEntries = JSON.parse(localStorage.getItem(SESSION_ENTRIES_KEY) || '[]');
+             sessionEntries = Array.isArray(storedEntries) ? storedEntries : [];
+         } catch (e) {
+             console.error("Error reading session entries on toggle:", e);
+             sessionEntries = []; // Reset if error
+         }
+        renderSessionList();
+        // Optional scroll into view
+         document.getElementById('session-entries-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } else {
+        // --- Ending Session Mode ---
+        $(this).removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
+        $("#session-entries-container").addClass("d-none");
+
+        // Prompt to sync before clearing data if there are entries
+        if (sessionEntries.length > 0) {
+            if (confirm(`You have ${sessionEntries.length} unsynced draws in this session. Sync them now before ending?`)) {
+                $("#sync-session-entries").click(); // Trigger sync
+                // Note: Sync is async. We proceed to clear local state immediately.
+                // If sync fails later, the failed items will remain in sessionEntries (memory)
+                // and will be re-saved if the user re-enters session mode before refresh.
+                // If they refresh after a failed sync, unsynced items might be lost unless sync logic saves failed items back to localStorage.
+            }
+        }
+
+        // Clear session state from memory and localStorage when manually ending
+        sessionEntries = []; // Clear array in memory
+        localStorage.removeItem(SESSION_ENTRIES_KEY); // Remove entries from storage
+        localStorage.removeItem(SESSION_MODE_KEY); // Remove mode flag from storage (already set to false above, but remove for cleanliness)
+        renderSessionList(); // Update UI (shows empty message inside hidden container)
+    }
+});
 
   //===================== EXTENDED MODE =====================
 
   $("#extendedMode").change(function() {
-      maxValue = $(this).is(":checked") ? 300 : 20;
-      crestValue = Math.max(minValue, Math.min(crestValue, maxValue));
-      $("#crestValue").text(crestValue);
-      if (ctx) {
-          drawRing(crestValue);
-      }
-  });
+    if ($(this).is(":checked")) {
+        // Extended Mode ON
+        maxValue = 300;
+        $("#preset-buttons-container").addClass("d-none"); // Hide presets
+        $("#slider-container").removeClass("d-none"); // Show slider
+        crestValue = minValue; // Reset value when switching mode
+        $("#crestValue").text(crestValue);
+        $(".preset-crest-btn").removeClass('active'); // Deactivate preset buttons
+        if (ctx) {
+            drawRing(crestValue);
+        }
+    } else {
+        // Extended Mode OFF
+        maxValue = 20; // Or keep 300 if presets can exceed 20? Let's stick to 20 for now.
+        $("#preset-buttons-container").removeClass("d-none"); // Show presets
+        $("#slider-container").addClass("d-none"); // Hide slider
+        crestValue = minValue; // Reset value when switching mode
+         $("#crestValue").text(crestValue); // Optionally hide/clear this if only presets matter? Let's keep it updated.
+        $(".preset-crest-btn").removeClass('active'); // Deactivate preset buttons
+    }
+});
 
   //===================== RADIAL SLIDER =====================
 
+    $(document).on("click", ".preset-crest-btn", function() {
+        if (currentDiamond === null) {
+            alert("Please select a draw type first.");
+            return; // Don't allow setting crests if draw type isn't selected
+        }
+
+    $(".preset-crest-btn").removeClass('active'); // Deactivate other presets
+    $(this).addClass('active'); // Activate clicked preset
+
+    crestValue = parseInt($(this).data("value")); // Get value from button
+    $("#crestValue").text(crestValue); // Update the display span (even if hidden)
+    });
   function drawRing(value) {
       if (!ctx) return;
 
@@ -427,87 +552,116 @@ $(document).ready(function() {
   //===================== SUBMIT / CANCEL DRAW =====================
 
   function submitEntryToSheet(entry) {
-      $("#loader").removeClass("d-none");
-
-      $.ajax({
-          url: url_tracker,
-          method: "POST",
-          data: {
-              action: "add",
-              diamond: entry.diamond,
-              crests: entry.crests,
-              timestamp: entry.timestamp,
-              User: entry.User
-          },
-          timeout: 20000,
-          success: function(response) {
-              console.log("Entry submitted: ", response);
-              fetchRemoteData(() => {
-                  updateHistory();
-                  updateStats();
-                  updateCompare();
-                  updateHomeDrawList();
-                  $("#loader").addClass("d-none");
-              });
-          },
-          error: function(jqXHR, textStatus, errorThrown) {
-              console.error("Submit Error:", textStatus, errorThrown);
-              alert("Error submitting draw.");
-              $("#loader").addClass("d-none");
-          }
-      });
-  }
+    // No loader handling here - handled by calling function
+    return $.ajax({ // <-- RETURN this
+        url: url_tracker,
+        method: "POST",
+        data: {
+            action: "add",
+            diamond: entry.diamond,
+            crests: entry.crests,
+            timestamp: entry.timestamp, // Make sure timestamp is passed correctly
+            User: entry.User
+        },
+        timeout: 20000
+        // Success/error are handled by .done()/.fail() where called
+    });
+}
 
   $("#submit-draw").click(function() {
-      if (currentDiamond === null) {
-          alert("Select draw type.");
-          return;
-      }
+    if (currentDiamond === null) {
+        alert("Select draw type.");
+        return;
+    }
+    // Crest value is already set by preset click or slider change
 
-      if (confirm(`Record: ${currentDiamond === 0 ? 'Free' : currentDiamond + '💎'} -> ${crestValue} Tokens?`)) {
-          let entry = {
-              id: 'local-' + Date.now(),
-              diamond: currentDiamond,
-              crests: crestValue,
-              timestamp: Date.now(),
-              User: currentUser
-          };
+    // --- Create the entry object ---
+    let entry = {
+        // Use a temporary ID for the session list rendering
+        tempId: 'session-' + Date.now(),
+        diamond: currentDiamond,
+        crests: crestValue,
+        timestamp: Date.now(), // Use current time for session logging
+        User: currentUser,
+        synced: false // Mark as not synced initially
+    };
 
-          // Optimistically update UI
-          localData[currentUser].unshift({ ...entry });
-          updateHistory();
-          updateStats();
-          updateCompare();
-          updateHomeDrawList();
+    if (inSessionMode) {
+        // === SESSION MODE LOGIC ===
+        console.log("Adding to session:", entry);
+        sessionEntries.push(entry); // Add to the temporary array
 
-          // Submit to Google Sheet
-          submitEntryToSheet({
-              diamond: entry.diamond,
-              crests: entry.crests,
-              timestamp: entry.timestamp,
-              User: entry.User
-          });
+    // --- ADD THIS LINE to save after adding ---
+    localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
+    // -------------------------------------------
+        renderSessionList(); // Update the session list UI
 
-          // Show notification if permission granted
-          if ("Notification" in window && Notification.permission === "granted") {
-              new Notification("Draw Recorded", {
-                  body: `Gained ${crestValue} tokens!`,
-                  icon: "assets/token.png"
-              });
-          }
+        // Perform partial reset (keep draw type, reset crests)
+        $("#extendedMode").prop("checked", false);
+        maxValue = 20;
+        $("#slider-container").addClass("d-none");
+        $("#preset-buttons-container").removeClass("d-none");
+        crestValue = minValue;
+        $("#crestValue").text(minValue);
+        $(".preset-crest-btn").removeClass('active');
+        if (ctx) { drawRing(minValue); }
+        // NOTE: Active draw option button remains active
 
-          // Reset form
-          currentDiamond = null;
-          $("#selected-draw-label").text("");
-          $("#extendedMode").prop("checked", false);
-          maxValue = 20;
-          crestValue = minValue;
-          $("#crestValue").text(minValue);
-          if (ctx) {
-              drawRing(minValue);
-          }
-      }
-  });
+    } else {
+        // === NORMAL MODE LOGIC (Modified for Promise) ===
+        console.log("Submitting directly:", entry);
+        // 1. Optimistic UI Update (to main history) - uses 'local-' prefix
+        let historyEntry = { ...entry, id: 'local-' + entry.timestamp }; // Use different temp ID for history
+        localData[currentUser].unshift(historyEntry);
+        updateHistory(); // Update main history list immediately
+        updateStats();   // Update stats immediately
+        updateCompare(); // Update compare immediately
+
+        // Show loader for single sync
+        $("#loader").removeClass("d-none");
+
+        // 2. Submit to Sheet (returns a promise)
+        submitEntryToSheet({ diamond: entry.diamond, crests: entry.crests, timestamp: entry.timestamp, User: entry.User })
+            .done(function(response) {
+                console.log("Entry submitted: ", response);
+                // Fetch data AFTER successful single submission to update IDs etc.
+                fetchRemoteData(() => {
+                    updateHistory(); // Refresh history potentially with real ID
+                    updateStats();
+                    updateCompare();
+                    $("#loader").addClass("d-none");
+                });
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.error("Submit Error:", textStatus, errorThrown);
+                alert("Error submitting draw. Entry added locally but not synced.");
+                // Maybe add a visual indicator to the failed local entry in history?
+                 $("#loader").addClass("d-none");
+                 // We might need to update the specific history entry to show a failure icon
+                 // This requires finding the 'local-' entry and changing its appearance
+            })
+            .always(function() {
+                 // Hide loader if it's still visible for any reason
+                 // $("#loader").addClass("d-none"); // Already handled in done/fail usually
+            });
+
+
+        // 3. Notification
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Draw Recorded", { /* ... */ });
+        }
+
+        // 4. Perform partial reset (same as session mode now)
+         $("#extendedMode").prop("checked", false);
+         maxValue = 20;
+         $("#slider-container").addClass("d-none");
+         $("#preset-buttons-container").removeClass("d-none");
+         crestValue = minValue;
+         $("#crestValue").text(minValue);
+         $(".preset-crest-btn").removeClass('active');
+         if (ctx) { drawRing(minValue); }
+    }
+});
 
   $("#cancel-draw").click(function() {
       if (confirm("Cancel draw input?")) {
@@ -517,125 +671,248 @@ $(document).ready(function() {
           maxValue = 20;
           crestValue = minValue;
           $("#crestValue").text(minValue);
+          $(".preset-crest-btn").removeClass('active'); // --- ADD THIS LINE ---
           if (ctx) {
               drawRing(minValue);
           }
+          $(".draw-option").removeClass('active'); 
       }
   });
 
+//===================== SYNC SESSION ENTRIES =====================
+$("#sync-session-entries").click(function() {
+    if (sessionEntries.length === 0) {
+        console.log("No session entries to sync.");
+        return;
+    }
+
+    const $syncButton = $(this);
+    const $loader = $("#loader");
+    const entriesToSync = [...sessionEntries]; // Copy array to avoid issues if sessionEntries is modified during async operations
+
+    $syncButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Syncing...');
+    $loader.removeClass("d-none"); // Show global loader during sync
+
+    let promises = entriesToSync.map(entry => {
+        // Pass data needed by the sheet script
+         return submitEntryToSheet({
+             diamond: entry.diamond,
+             crests: entry.crests,
+             timestamp: entry.timestamp, // Ensure timestamp is included
+             User: entry.User
+         })
+         // IMPORTANT: Attach temporary ID to success/failure for tracking
+         .then(response => ({ status: 'fulfilled', value: response, tempId: entry.tempId }))
+         // Need to catch potential network errors or script errors from the ajax call itself
+         .catch(error => {
+             console.error("AJAX Error for entry:", entry.tempId, error);
+             // Return a specific structure indicating rejection, including tempId
+             // Use the original entry or just tempId for identification
+             return { status: 'rejected', reason: error, tempId: entry.tempId };
+          });
+    });
+
+    Promise.allSettled(promises)
+        .then(results => {
+            console.log("Sync results:", results);
+            let successfullySyncedTempIds = []; // Store tempIds of successful ones
+            let failedEntries = [];             // Store full entry objects of failed ones
+
+            results.forEach(result => {
+                if (result.status === 'fulfilled') {
+                    // Assuming result.value structure is good if fulfilled
+                    successfullySyncedTempIds.push(result.value.tempId);
+                    // Optional: Update UI for this specific item temporarily if needed
+                    // $(`#session-entries-list .session-entry-card[data-tempid="${result.value.tempId}"]`).addClass('synced-briefly');
+                } else {
+                    // Status is 'rejected'
+                    console.error(`Sync failed for entry tempId ${result.reason.tempId}:`, result.reason);
+                    // Find the original entry object using the tempId stored in the reason object
+                    let failedEntry = entriesToSync.find(e => e.tempId === result.reason.tempId);
+                    if (failedEntry) {
+                        failedEntries.push(failedEntry); // Keep the whole object for retry/display
+                        // Mark the failed item in the session list UI
+                        $(`#session-entries-list .session-entry-card[data-tempid="${result.reason.tempId}"] .sync-status-icon`)
+                          .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed"></i>');
+                    } else {
+                         console.error("Could not find original entry for failed tempId:", result.reason.tempId);
+                    }
+                }
+            });
+
+            // Update the main sessionEntries array: keep only failed ones
+            sessionEntries = failedEntries;
+
+            // --- SAVE remaining (failed) entries back to localStorage ---
+            localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
+            // -----------------------------------------------------------
+
+            // Re-render the session list (will now only show failed ones, if any)
+            renderSessionList(); // This also updates the badge
+
+            // If *any* entries succeeded, fetch fresh data for history/stats
+            if (successfullySyncedTempIds.length > 0) {
+                console.log(`${successfullySyncedTempIds.length} entries synced successfully.`);
+                // Fetch remote data AFTER processing all sync results
+                fetchRemoteData(() => {
+                    updateHistory();
+                    updateStats();
+                    updateCompare();
+                    $loader.addClass("d-none"); // Hide loader after fetch completes
+                    // Reset button state (badge reflects remaining failed entries count)
+                    $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`);
+
+                    // --- Check if ALL originally attempted entries synced successfully ---
+                     if (failedEntries.length === 0) { // This check is now inside the fetch callback if successes occurred
+                          console.log("All session entries synced successfully.");
+                          // Clear the storage key as the session is now definitively empty
+                          localStorage.removeItem(SESSION_ENTRIES_KEY); // <<< Explicitly clear if fully successful
+
+                           // Optional: Auto-end session mode
+                           // if (inSessionMode) {
+                           //      $("#toggle-session-mode").click(); // This handles removing SESSION_MODE_KEY too
+                           // }
+                     }
+                    // --- End Check for Full Success ---
+
+                });
+            } else if (failedEntries.length > 0) {
+                // Only failures occurred, no need to fetchRemoteData
+                alert(`Sync failed for ${failedEntries.length} entries. Please check console and try again.`);
+                $loader.addClass("d-none"); // Hide loader
+                $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`); // Reset button state
+            } else {
+                // No entries were processed initially (should be caught at the start)
+                // Or somehow results array was empty
+                 $loader.addClass("d-none");
+                 $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">0</span>`);
+            }
+
+        }); // End Promise.allSettled.then
+}); // End sync button click handler
+  //===================== RENDER SESSION LIST =====================
+function renderSessionList() {
+    let sessionList = $("#session-entries-list");
+    sessionList.empty(); // Clear current list
+
+    if (sessionEntries.length === 0) {
+        // Use text-white or text-light depending on your background
+        sessionList.html('<p class="text-light text-center small mt-2 mb-0">No draws added in this session yet.</p>');
+    } else {
+        // Reverse the array temporarily for display order (newest first)
+        // Or keep as is for oldest first - adjust slice/reverse as needed
+        let reversedSessionEntries = [...sessionEntries].reverse();
+
+        reversedSessionEntries.forEach(entry => {
+            // Generate text/icon for draw type (cost)
+            let diamondDisplayHtml = (entry.diamond === 0) ?
+                `<img src="assets/mystical_dial.png" class="small-icon me-1" alt="Free Draw"> Free` :
+                `${entry.diamond} <img class='small-icon mx-1' src='assets/diamond.png' alt='Diamond'>`;
+
+            // Generate text/icon for crests earned
+            let crestDisplayHtml = `${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">`;
+            // Handle the "Prize Pool Item" case specifically if needed
+            if (entry.diamond > 0 && entry.crests === 0) { // Example condition: Spent diamonds but got 0 crests could mean prize pool
+                // Or use the Prize Pool button value if that's always 0 crests:
+                // if (entry.crests === 0 && entry.diamond === /* value of prize pool button if non-zero */ )
+                // This check might need refinement based on how you definitively log prize pool items
+                crestDisplayHtml = `<img src="assets/prize_pool_item.png" class="small-icon ms-1" alt="Prize Pool Item">`;
+            }
+
+
+            // Determine sync status icon
+            let syncIconHtml = entry.synced ? // (This will usually be false here)
+                 '<span class="sync-status-icon" title="Synced"><i class="fa-solid fa-check text-success"></i></span>' :
+                 '<span class="sync-status-icon" title="Pending Sync"><i class="fa-solid fa-clock text-warning"></i></span>';
+
+            // Construct the list item HTML - **Corrected template literals and structure**
+            let listItem = `
+                <div class="list-group-item session-entry-card" data-tempid="${entry.tempId}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="entry-details d-flex align-items-center flex-grow-1"> ${diamondDisplayHtml}
+                            <i class="fa-solid fa-arrow-right text-muted mx-2"></i> ${crestDisplayHtml}
+                        </span>
+                        ${syncIconHtml} </div>
+                </div>`;
+            sessionList.append(listItem);
+        });
+    }
+    // Update badge count outside the loop
+    $("#session-count-badge").text(sessionEntries.length);
+}
   //===================== UPDATE HISTORY / HOME LIST =====================
 
   function updateHistory() {
-      let historyList = $("#history-list");
-      historyList.empty();
+    let historyList = $("#history-list");
+    historyList.empty();
 
-      const userEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
+    const userEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
 
-      if (userEntries.length === 0) {
-          historyList.html('<li class="list-group-item text-center text-muted">No history.</li>');
-          return;
-      }
+    if (userEntries.length === 0) {
+        historyList.html('<li class="list-group-item text-center text-muted">No history.</li>');
+        return;
+    }
 
-      userEntries.forEach(entry => {
-          if (!entry || typeof entry.timestamp !== 'number' || isNaN(entry.timestamp)) {
-               // Skip invalid entries quietly
-               console.warn("Skipping invalid history entry:", entry);
-               return;
-          }
+    userEntries.forEach(entry => {
+        if (!entry || typeof entry.timestamp !== 'number' || isNaN(entry.timestamp)) {
+            // Skip invalid entries quietly
+            console.warn("Skipping invalid history entry:", entry);
+            return;
+        }
 
-          let drawDate = new Date(entry.timestamp).toLocaleDateString();
-          let drawTime = new Date(entry.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-          });
-          let diamondText = (entry.diamond === 0) ?
-              `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw"> Free` :
-              `${entry.diamond} <img class='small-icon' src='assets/diamond.png' alt='Diamond'>`;
+        let drawDate = new Date(entry.timestamp).toLocaleDateString();
+        let drawTime = new Date(entry.timestamp).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        let diamondText = (entry.diamond === 0) ?
+            `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw"> Free` :
+            `${entry.diamond} <img class='small-icon' src='assets/diamond.png' alt='Diamond'>`;
 
-          let entryId = entry.id;
-          let entryIdAttr = entryId ? `data-entry-id="${entryId}"` : '';
-          // Check if entry is synced (has a non-local ID)
-          let canEditDelete = entryId && !String(entryId).startsWith('local-');
-          let isLocal = entryId && String(entryId).startsWith('local-');
+        let entryId = entry.id;
+        let entryIdAttr = entryId ? `data-entry-id="${entryId}"` : '';
 
-          let listItem = `
-              <div class="history-card mb-3" ${entryIdAttr}>
-                  <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                          <div class="history-date">${drawDate} ${drawTime}</div>
-                          <div class="history-details">
-                              ${diamondText} → ${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">
-                          </div>
-                      </div>
-                      <div>
-                          ${ canEditDelete ?
-                              `<button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entryId}"><i class="fa fa-trash"></i></button>` +
-                              `<button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entryId}"><i class="fa fa-edit"></i></button>`
-                              : (isLocal ? '<span class="sync-indicator text-muted small" title="Syncing..."><i class="fas fa-sync fa-spin"></i></span>' : '')
-                          }
-                      </div>
-                  </div>
-              </div>`;
+        // --- Determine Sync Status and Buttons ---
+        let isLocal = entryId && String(entryId).startsWith('local-'); // Check for 'local-' prefix
+        let canEditDelete = entryId && !isLocal; // Can only edit/delete non-local (synced) entries
 
-          historyList.append(listItem);
-      });
-  }
+        let syncIconHtml = '';
+        if (isLocal) {
+            // If ID starts with 'local-', it's syncing (added optimistically in Normal Mode)
+            syncIconHtml = '<span class="sync-indicator text-muted small ms-2" title="Syncing..."><i class="fas fa-sync fa-spin"></i></span>';
+        } else if (entryId) {
+             // If it has an ID and it's not local, it's synced (from sheet)
+             syncIconHtml = '<span class="sync-indicator text-success small ms-2" title="Synced"><i class="fa-solid fa-check"></i></span>';
+             // You can uncomment the next line and comment the one above if you prefer NO icon for synced items
+             // syncIconHtml = '';
+        }
+        // Note: Entries added in Session Mode *don't* appear here until they are synced and fetched.
 
-  function updateHomeDrawList() {
-      let drawListHome = $("#draw-list");
-      drawListHome.empty();
+        let editDeleteButtons = canEditDelete ?
+             `<button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entryId}"><i class="fa fa-trash"></i></button>` +
+             `<button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entryId}"><i class="fa fa-edit"></i></button>` :
+             ''; // No edit/delete for local entries
+        // --- End Determine Sync Status ---
 
-      const userEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
 
-      if (userEntries.length === 0) {
-          drawListHome.html('<p class="text-center text-light mt-3">No recent draws.</p>');
-          return;
-      }
+        // --- Construct List Item HTML ---
+        let listItem = `
+            <div class="history-card mb-3" ${entryIdAttr}>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="history-date">${drawDate} ${drawTime}</div>
+                        <div class="history-details">
+                            ${diamondText} → ${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center"> ${editDeleteButtons}
+                        ${syncIconHtml}   </div>
+                </div>
+            </div>`;
 
-      const recentEntries = userEntries.slice(0, 15); // Show latest 15
-
-      recentEntries.forEach(entry => {
-           if (!entry || typeof entry.timestamp !== 'number' || isNaN(entry.timestamp)) {
-               // Skip invalid entries quietly
-               console.warn("Skipping invalid home list entry:", entry);
-               return;
-           }
-
-          let drawDate = new Date(entry.timestamp).toLocaleDateString();
-          let drawTime = new Date(entry.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-          });
-          let diamondText = (entry.diamond === 0) ?
-              `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw"> Free` :
-              `${entry.diamond} <img class='small-icon' src='assets/diamond.png' alt='Diamond'>`;
-
-          let entryId = entry.id;
-          let entryIdAttr = entryId ? `data-entry-id="${entryId}"` : '';
-          // Check if entry is synced (has a non-local ID)
-          let canEditDelete = entryId && !String(entryId).startsWith('local-');
-          let isLocal = entryId && String(entryId).startsWith('local-');
-
-          let card = `
-              <div class="card mb-2 history-card" ${entryIdAttr}>
-                  <div class="card-body d-flex align-items-center p-2">
-                      <div class="me-auto">
-                          <div class="history-date small">${drawDate} ${drawTime}</div>
-                          <div class="history-details">
-                              ${diamondText} → ${entry.crests} <img src="assets/token.png" alt="Token" class="small-icon ms-1">
-                          </div>
-                      </div>
-                      ${ canEditDelete ?
-                          `<button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entryId}"><i class="fa fa-trash"></i></button>` +
-                          `<button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entryId}"><i class="fa fa-edit"></i></button>`
-                          : (isLocal ? '<span class="sync-indicator text-muted small" title="Syncing..."><i class="fas fa-sync fa-spin"></i></span>' : '')
-                      }
-                  </div>
-              </div>`;
-
-          drawListHome.append(card);
-      });
-  }
+        historyList.append(listItem);
+    });
+}
 
   //===================== UPDATE STATS =====================
 
@@ -1276,7 +1553,6 @@ $(document).ready(function() {
                       updateHistory();
                       updateStats();
                       updateCompare();
-                      updateHomeDrawList();
                       $("#loader").addClass("d-none");
                   });
               })
@@ -1331,7 +1607,6 @@ $(document).ready(function() {
                       updateHistory();
                       updateStats();
                       updateCompare();
-                      updateHomeDrawList();
                       $("#loader").addClass("d-none");
                   });
               })

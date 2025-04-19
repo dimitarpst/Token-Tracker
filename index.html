@@ -1,205 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MLBB Token Tracker</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="css/style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MLBB Token Tracker</title>
+    <link rel="manifest" href="manifest.json" />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    />
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div id="swipe-zone"></div>
+    <div id="swipe-zone"></div>
 
-  <div id="loader" class="d-none">
-    <div class="spinner-border text-dark" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
-
-  <div id="welcome-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-start">
-    <div class="welcome-choices d-flex flex-column flex-fill w-100">
-      <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Token Tracker</h1>
-      <p class="mb-4 text-dark">Who are you?</p>
-      <button class="user-button choose-user" data-user="Mitko">
-        <img src="assets/fredrinn.png" alt="Mitko" class="user-img-giant" />
-        <span class="fs-3 text-dark mt-2">Mitko</span>
-      </button>
-      <button class="user-button choose-user" data-user="Aylin">
-        <img src="assets/lylia.png" alt="Aylin" class="user-img-giant" />
-        <span class="fs-3 text-dark mt-2">Aylin</span>
-      </button>
-    </div>
-  </div>
-
-  <div id="main-app" class="d-none">
-    <nav id="sidebar" class="sidebar">
-      <div class="d-flex justify-content-center align-items-center pb-3">
-        <div class="tracker-menu me-auto">
-          <img id="event-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="event-logo">
+    <div id="loader" class="d-none">
+        <div class="spinner-border text-dark" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
-        <button id="close-sidebar" class="btn btn-link text-light ps-0 fs-4">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <ul class="nav flex-column">
-        <li class="nav-item"><a class="nav-link" data-tab="home" href="#"><i class="fa-solid fa-house"></i> Home</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="history" href="#"><i class="fa-solid fa-history"></i> History</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="stats" href="#"><i class="fa-solid fa-chart-line"></i> Stats</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="compare" href="#"><i class="fa-solid fa-arrows-left-right"></i> Compare</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="settings" href="#"><i class="fa-solid fa-gear"></i> Settings</a></li>
-      </ul>
-    </nav>
-    <div id="overlay"></div>
-
-    <div id="top-bar" class="d-flex align-items-center text-light px-3">
-      <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
-      <img id="navbar-current-user-img" src="" alt="User" class="ms-auto" style="height: 100%; object-fit: cover;">
-
-      <button id="open-sidebar" class="btn btn-link text-light">
-        <i class="fa-solid fa-bars"></i>
-      </button>
     </div>
 
-    <div id="content">
-      <section id="tab-home" class="tab-content">
-        <h3 class="mt-3 text-light">Add Draw</h3>
-                <!-- Draw Options -->
-                <div id="draw-options" class="container">
-                  <div class="row">
-                    <div class="col-6 col-md-4 mb-3">
-                      <button class="btn draw-option" data-diamond="0">
-                        <img src="assets/mystical_dial.png" alt="Free Draw" class="draw-img" /><br />Free Draw
-                      </button>
-                    </div>
-                    <div class="col-6 col-md-4 mb-3">
-                      <button class="btn draw-option" data-diamond="25">
-                        <img src="assets/diamond.png" alt="25 Diamonds" class="draw-img" /><br />25 Diamonds
-                      </button>
-                    </div>
-                    <div class="col-6 col-md-4 mb-3">
-                      <button class="btn draw-option" data-diamond="50">
-                        <img src="assets/diamond.png" alt="50 Diamonds" class="draw-img" /><br />50 Diamonds
-                      </button>
-                    </div>
-                    <div class="col-6 col-md-4 mb-3">
-                      <button class="btn draw-option" data-diamond="450">
-                        <img src="assets/diamond.png" alt="450 Diamonds" class="draw-img" /><br />450 Diamonds
-                      </button>
-                    </div>
-                    <div class="col-6 col-md-4 mb-3">
-                      <button class="btn draw-option" data-diamond="500">
-                        <img src="assets/diamond.png" alt="500 Diamonds" class="draw-img" /><br />500 Diamonds
-                      </button>
-                    </div>
-                  </div>
+    <div id="welcome-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-start">
+        <div class="welcome-choices d-flex flex-column flex-fill w-100">
+            <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Token Tracker</h1>
+            <p class="mb-4 text-dark">Who are you?</p>
+            <button class="user-button choose-user" data-user="Mitko">
+                <img src="assets/fredrinn.png" alt="Mitko" class="user-img-giant" />
+                <span class="fs-3 text-dark mt-2">Mitko</span>
+            </button>
+            <button class="user-button choose-user" data-user="Aylin">
+                <img src="assets/lylia.png" alt="Aylin" class="user-img-giant" />
+                <span class="fs-3 text-dark mt-2">Aylin</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app" class="d-none">
+        <nav id="sidebar" class="sidebar">
+            <div class="d-flex justify-content-center align-items-center pb-3">
+                <div class="tracker-menu me-auto">
+                    <img id="event-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="event-logo">
                 </div>
-        <!-- Static Add Draw Panel -->
-        <div id="draw-input-static" class="container">
-          <div class="radial-container">
-            <img id="draw-type-icon" src="assets/other_draw.png" alt="Draw Icon" class="draw-large-img">
-            <p id="selected-draw-label" class="text-light fs-4 mt-3"></p>
-            <div class="form-check form-switch text-light mb-2">
-              <input class="form-check-input" type="checkbox" id="extendedMode">
-              <label class="form-check-label" for="extendedMode">Extended Mode</label>
+                <button id="close-sidebar" class="btn btn-link text-light ps-0 fs-4">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <canvas id="radialSlider" width="260" height="260"></canvas>
-            <p class="text-light fs-5 mt-3">
-              <img src="assets/token.png" alt="Token" class="small-icon">
-              <span id="crestValue">0</span>
-            </p>
-            <div class="mt-4">
-              <button id="submit-draw" class="btn btn-success btn-lg me-2">Confirm</button>
-              <button id="cancel-draw" class="btn btn-outline-light btn-lg">Cancel</button>
-            </div>
-          </div>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" data-tab="home" href="#"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li class="nav-item"><a class="nav-link" data-tab="history" href="#"><i class="fa-solid fa-history"></i> History</a></li>
+                <li class="nav-item"><a class="nav-link" data-tab="stats" href="#"><i class="fa-solid fa-chart-line"></i> Stats</a></li>
+                <li class="nav-item"><a class="nav-link" data-tab="compare" href="#"><i class="fa-solid fa-arrows-left-right"></i> Compare</a></li>
+                <li class="nav-item"><a class="nav-link" data-tab="settings" href="#"><i class="fa-solid fa-gear"></i> Settings</a></li>
+            </ul>
+        </nav>
+        <div id="overlay"></div>
+
+        <div id="top-bar" class="d-flex align-items-center text-light px-3">
+            <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
+            <img id="navbar-current-user-img" src="" alt="User" class="ms-auto" style="height: 100%; object-fit: cover;">
+            <button id="open-sidebar" class="btn btn-link text-light">
+                <i class="fa-solid fa-bars"></i>
+            </button>
         </div>
 
-        <div id="draw-list" class="container mt-3"></div>
-      </section>
+        <div id="content">
+            <section id="tab-home" class="tab-content">
+                <h3 class="mt-3 text-light">Add Draw</h3>
 
-      <section id="tab-history" class="tab-content d-none">
-        <h3 class="mt-3 text-light">History</h3>
-        <div class="container">
-          <ul id="history-list" class="list-group"></ul>
-        </div>
-      </section>
 
-      <section id="tab-stats" class="tab-content d-none">
-        <h3 class="mt-3 text-light">Stats</h3>
-        <div class="container">
-          <div class="stats-panel card p-3 mb-3">
-            <div class="text-center mb-3">
-              <img id="character-image" src="" alt="Character" class="character-img mb-2">
-              <h4 id="progress-title">Progress</h4>
+
+                <div id="draw-options" class="container">
+                    <div class="row">
+                        <div class="col-6 col-md-4 mb-3">
+                            <button class="btn draw-option" data-diamond="0">
+                                <img src="assets/mystical_dial.png" alt="Free Draw" class="draw-img" /><br />Free Draw
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <button class="btn draw-option" data-diamond="25">
+                                <img src="assets/diamond.png" alt="25 Diamonds" class="draw-img" /><br />25 Diamonds
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <button class="btn draw-option" data-diamond="50">
+                                <img src="assets/diamond.png" alt="50 Diamonds" class="draw-img" /><br />50 Diamonds
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <button class="btn draw-option" data-diamond="450">
+                                <img src="assets/diamond.png" alt="450 Diamonds" class="draw-img" /><br />450 Diamonds
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <button class="btn draw-option" data-diamond="500">
+                                <img src="assets/diamond.png" alt="500 Diamonds" class="draw-img" /><br />500 Diamonds
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="draw-input-static" class="container">
+                    <div class="radial-container">
+                        <img id="draw-type-icon" src="assets/other_draw.png" alt="Draw Icon" class="draw-large-img">
+                        <p id="selected-draw-label" class="text-light fs-4 mt-3"></p>
+
+                        <div class="form-check form-switch text-light mb-3 d-flex justify-content-center align-items-center">
+                            <input class="form-check-input" type="checkbox" id="extendedMode" style="transform: scale(1.3);">
+                            <label class="form-check-label ps-2" for="extendedMode">Extended Mode</label>
+                        </div>
+
+                        <div id="preset-buttons-container" class="row g-2 mb-3">
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="5">5 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="8">8 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="10">10 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="12">12 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="15">15 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="20">20 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-outline-warning w-100 preset-crest-btn" data-value="0">
+                                    <img src="assets/prize_pool_item.png" class="small-icon me-1" alt="Prize Pool"> Prize Pool Item
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="slider-container" class="d-none">
+                            <canvas id="radialSlider" width="260" height="260"></canvas>
+                            <p class="text-light fs-5 mt-3">
+                                <img src="assets/token.png" alt="Token" class="small-icon">
+                                <span id="crestValue">0</span>
+                            </p>
+                        </div>
+
+                        <div class="mt-4">
+                            <button id="submit-draw" class="btn btn-success btn-lg me-2">Confirm</button>
+                            <button id="cancel-draw" class="btn btn-outline-light btn-lg">Cancel</button>
+                        </div>
+
+                    </div> </div> 
+                    <div class="container text-center mb-3">
+                      <button id="toggle-session-mode" class="btn btn-outline-info">
+                          <i class="fa-solid fa-bolt"></i> Start Session Entry
+                      </button>
+                  </div>
+
+                    <div id="session-entries-container" class="container mt-4 d-none">
+                    <div class="session-header d-flex justify-content-between align-items-center mb-2">
+                        <h4 class="text-light mb-0">Session Draws</h4>
+                        <button id="sync-session-entries" class="btn btn-sm btn-primary">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Sync
+                            <span id="session-count-badge" class="badge bg-light text-dark ms-1">0</span>
+                        </button>
+                    </div>
+                    <div id="session-entries-list" class="list-group session-list-scroll">
+                        </div>
+                </div>
+
+            </section> <section id="tab-history" class="tab-content d-none">
+                <h3 class="mt-3 text-light">History</h3>
+                <div class="container">
+                    <ul id="history-list" class="list-group">
+                        </ul>
+                </div>
+            </section>
+
+            <section id="tab-stats" class="tab-content d-none">
+                <h3 class="mt-3 text-light">Stats</h3>
+                <div class="container">
+                    <div class="stats-panel card p-3 mb-3">
+                        <div class="text-center mb-3">
+                            <img id="character-image" src="" alt="Character" class="character-img mb-2">
+                            <h4 id="progress-title">Progress</h4>
+                        </div>
+                        <div id="stats-toggle" class="d-flex justify-content-center mb-3">
+                            <button id="toggle-tokens" class="btn btn-sm btn-outline-light active">Tokens</button>
+                            <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
+                        </div>
+                        <div class="progress mb-3">
+                            <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <p id="stats-summary" class="mb-0">
+                            Total: <span id="total-crest">0</span>
+                            <img src="assets/token.png" alt="Token" class="small-icon">
+                        </p>
+                    </div>
+
+                    <canvas id="stats-chart" class="mb-4"></canvas>
+                    <div class="card mb-3 p-2">
+                        <h5 class="text-dark">Free vs Diamond</h5>
+                        <canvas id="stats-pie"></canvas>
+                    </div>
+                    <div class="card mb-3 p-2">
+                        <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
+                        <canvas id="stats-line"></canvas>
+                    </div>
+                    <div class="card mb-3 p-2">
+                        <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
+                        <canvas id="stats-hist"></canvas>
+                    </div>
+                    <div class="card mb-3 p-2">
+                        <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
+                        <canvas id="stats-tier"></canvas>
+                    </div>
+
+                    <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
+                        <h5 class="text-light mb-3">Advanced Metrics</h5>
+                        <div id="advanced-metrics-grid" class="metrics-grid">
+                             </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-compare" class="tab-content d-none">
+                <h3 class="mt-3 text-light">Compare</h3>
+                <div class="container" id="compare-container">
+                     </div>
+            </section>
+
+            <div id="tab-settings" class="tab-content d-none">
+                <div class="container mt-3">
+                    <h4 class="mb-3 text-light">Settings</h4>
+                    <button id="change-user" class="btn btn-warning mb-2 w-100">Change User</button>
+                    <button id="reset-data" class="btn btn-danger mb-2 w-100">Reset Local Data</button>
+                    <p class="text-light mt-3 d-flex align-items-center flex-column">
+                        Currently logged in as:
+                        <img id="settings-current-user-img" src="" alt="Current User" class="ms-2" style="height: 220px; width: 100%;">
+                    </p>
+                </div>
             </div>
-            <div id="stats-toggle" class="d-flex justify-content-center mb-3">
-              <button id="toggle-tokens" class="btn btn-sm btn-outline-light active">Tokens</button>
-              <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
-            </div>
-            <div class="progress mb-3">
-              <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
-            <p id="stats-summary" class="mb-0">
-              Total: <span id="total-crest">0</span>
-              <img src="assets/token.png" alt="Token" class="small-icon">
-            </p>
-          </div>
 
-          <canvas id="stats-chart" class="mb-4"></canvas>
-
-          <div class="card mb-3 p-2">
-            <h5 class="text-dark">Free vs Diamond</h5>
-            <canvas id="stats-pie"></canvas>
-          </div>
-
-          <div class="card mb-3 p-2">
-            <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
-            <canvas id="stats-line"></canvas>
-          </div>
-
-          <div class="card mb-3 p-2">
-            <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
-            <canvas id="stats-hist"></canvas>
-          </div>
-
-          <div class="card mb-3 p-2">
-            <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
-            <canvas id="stats-tier"></canvas>
-          </div>
-
-          <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
-            <h5 class="text-light mb-3">Advanced Metrics</h5>
-            <div id="advanced-metrics-grid" class="metrics-grid"></div>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="tab-compare" class="tab-content d-none">
-        <h3 class="mt-3 text-light">Compare</h3>
-        <div class="container" id="compare-container">
-        </div>
-      </section>
-
-      <div id="tab-settings" class="tab-content d-none">
-        <div class="container mt-3">
-            <h4 class="mb-3 text-light">Settings</h4>
-            <button id="change-user" class="btn btn-warning mb-2 w-100">Change User</button>
-            <button id="reset-data" class="btn btn-danger mb-2 w-100">Reset Local Data</button>
-    
-            <p class="text-light mt-3 d-flex align-items-center flex-column"> Currently logged in as:
-              <img id="settings-current-user-img" src="" alt="Current User" class="ms-2" style="height: 220px; width: 100%;">
-              </p>
-        </div>
-    </div>
-    </div>
-  </div>
-
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="js/app.js"></script>
+        </div> </div> <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
