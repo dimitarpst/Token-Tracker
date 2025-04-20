@@ -8,12 +8,19 @@ $(document).ready(function() {
       });
   }
 
+  let inTenDrawMode = false;      // Flag for the special 10x input state
+let tenDrawCounter = 0;         // How many of the 10 results have been entered
+let tenDrawDiamondCost = 0;     // Stores 450 or 500 during 10x input
+let tenDrawTimestamp = null;    // Timestamp for the entire 10x batch
+let tenDrawBatchId = null;      // Optional: Shared ID for the 10 entries
   window.myChart = null;
   window.myPieChart = null;
   window.myLineChart = null;
   window.myHistChart = null;
   window.myTierChart = null;
 
+  let holdTimer = null;
+const HOLD_DURATION = 750; // Milliseconds for long press
   let localData = {
       Mitko: [],
       Aylin: []
@@ -131,7 +138,7 @@ $(document).ready(function() {
      maxValue = 20; // Default max value
      crestValue = minValue;
      $("#crestValue").text(crestValue);
-     $("#extendedMode").prop("checked", false);
+     $("#extendedMode").prop("disabled", false).prop("checked", false);
      $("#slider-container").addClass("d-none");
      $("#preset-buttons-container").removeClass("d-none");
      $(".preset-crest-btn").removeClass('active');
@@ -309,32 +316,68 @@ $(document).ready(function() {
       });
   }
 
-  //===================== DRAW OPTION =====================
+//===================== DRAW OPTION =====================
+$(".draw-option").click(function() {
+    // Clear previous selections / states unless already in 10x mode
+    if (!inTenDrawMode) {
+        $(".draw-option").removeClass('active');
+        $(".preset-crest-btn").removeClass('active');
+        crestValue = minValue; // Reset crest value if selecting a new normal draw
+        $("#crestValue").text(crestValue);
+         // Ensure extended mode is off unless explicitly turned on later
+         $("#extendedMode").prop("checked", false).trigger('change'); // Trigger change to hide slider
+    } else {
+        // If already in 10x mode, don't allow clicking another draw option
+        alert("Please finish entering the 10 results for the current draw.");
+        return;
+    }
 
-  $(".draw-option").click(function() {
-    $(".draw-option").removeClass('active'); // Remove active class from all buttons first
+    const diamond = parseInt($(this).data("diamond"));
+    const isTenDraw = diamond === 450 || diamond === 500;
 
-      const diamond = parseInt($(this).data("diamond"));
-      currentDiamond = diamond;
+    $(this).addClass('active'); // Activate clicked button
 
-      $(this).addClass('active'); // Add active class to the clicked button
+    if (isTenDraw) {
+        // === ENTERING 10x DRAW MODE ===
+        inTenDrawMode = true;
+        tenDrawCounter = 0;
+        tenDrawDiamondCost = diamond;
+        tenDrawTimestamp = Date.now(); // Timestamp for the whole batch
+        tenDrawBatchId = `10x-${tenDrawTimestamp}`; // Optional batch ID
 
-      const label = (diamond === 0) ? "Free Draw" : diamond + " Diamonds";
-      $("#selected-draw-label").text(label);
-      $("#draw-type-icon").attr("src", diamond === 0 ? "assets/mystical_dial.png" : "assets/diamond.png");
+        currentDiamond = diamond; // Still set currentDiamond for reference if needed
 
-        // Reset crest selection when changing draw type
-        $("#extendedMode").prop("checked", false); // Ensure extended is off
-        maxValue = 20;
+        // Update UI for 10x Mode
+        $("#selected-draw-label").text(`Enter Result 1 / 10 for ${diamond}💎 Draw`);
+        $("#draw-type-icon").attr("src", "assets/diamond.png"); // Show diamond icon
+        $("#preset-buttons-container").removeClass("d-none"); // Ensure presets are visible
         $("#slider-container").addClass("d-none"); // Ensure slider is hidden
-        $("#preset-buttons-container").removeClass("d-none"); // Ensure presets are shown
-        crestValue = minValue; // Reset crest value
-        $("#crestValue").text(crestValue); // Update display
-        $(".preset-crest-btn").removeClass('active'); // Deactivate any active preset button
-        if (ctx) {
-            drawRing(minValue); // Reset slider visual just in case
-        }
-  });
+        $("#extendedMode").prop("checked", false).prop("disabled", true); // Disable extended mode switch
+        $("#submit-draw").prop("disabled", true); // Disable confirm button during 10x entry
+
+        // Alert user clearly
+        // alert(`10x Draw Mode Activated: Click 10 preset values for the ${diamond}💎 draw.`);
+
+    } else {
+        // === NORMAL DRAW TYPE SELECTED ===
+        inTenDrawMode = false;
+        currentDiamond = diamond;
+
+        const label = (diamond === 0) ? "Free Draw" : diamond + " Diamonds";
+        $("#selected-draw-label").text(label);
+        $("#draw-type-icon").attr("src", diamond === 0 ? "assets/mystical_dial.png" : "assets/diamond.png");
+
+        // --- Ensure switches/buttons are enabled for normal draws ---
+        $("#extendedMode").prop("disabled", false); // <<< MAKE SURE THIS IS PRESENT AND false
+        $("#submit-draw").prop("disabled", false);
+        // -----------------------------------------------------------
+
+        // Reset crest value state
+        crestValue = minValue;
+        $("#crestValue").text(crestValue);
+        $(".preset-crest-btn").removeClass('active');
+    }
+});
 
   //===================== SESSION MODE TOGGLE =====================
 $("#toggle-session-mode").click(function() {
@@ -406,20 +449,78 @@ $("#toggle-session-mode").click(function() {
     }
 });
 
-  //===================== RADIAL SLIDER =====================
+//===================== PRESET CREST BUTTONS =====================
+$(document).on("click", ".preset-crest-btn", function() {
+    const selectedCrestValue = parseInt($(this).data("value"));
 
-    $(document).on("click", ".preset-crest-btn", function() {
-        if (currentDiamond === null) {
-            alert("Please select a draw type first.");
-            return; // Don't allow setting crests if draw type isn't selected
+    if (inTenDrawMode) {
+        // === PROCESSING CLICK IN 10x MODE ===
+        tenDrawCounter++;
+        crestValue = selectedCrestValue; // Use the clicked preset value
+
+        // Create the entry object for this specific result within the 10x draw
+        let entry = {
+            // *** THIS IS THE CORRECT TEMPLATE LITERAL SYNTAX ***
+            tempId: `session-<span class="math-inline">\{tenDrawTimestamp\}\-</span>{tenDrawCounter}`,
+            // ****************************************************
+            diamond: tenDrawDiamondCost, // Use the stored 10x cost
+            crests: crestValue,
+            timestamp: tenDrawTimestamp, // Use the batch timestamp
+            batchId: tenDrawBatchId, // Assign the batch ID (optional)
+            User: currentUser,
+            synced: false
+        };
+
+        // Debug log AFTER creating the entry - check this log carefully
+        console.log(`Adding 10x result ${tenDrawCounter}/10 (Entry Object):`, entry);
+
+        sessionEntries.push(entry);
+        localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
+        renderSessionList(); // Update the session list UI
+
+        // Update the status label
+        if (tenDrawCounter < 10) {
+            $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
+            // Briefly highlight clicked button? (Optional)
+            $(this).addClass('active-flash');
+            setTimeout(() => $(this).removeClass('active-flash'), 200);
+
+        } else {
+            // === FINISHED 10x DRAW ===
+            alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
+            inTenDrawMode = false;
+            tenDrawCounter = 0;
+
+            // Reset UI after 10 clicks
+            $(".draw-option").removeClass('active'); // Deactivate 450/500 button
+            $(".preset-crest-btn").removeClass('active'); // Deactivate presets
+            currentDiamond = null; // Force new draw type selection
+            crestValue = minValue;
+            $("#crestValue").text(crestValue);
+            $("#selected-draw-label").text(""); // Clear label
+            $("#draw-type-icon").attr("src", "assets/other_draw.png"); // Reset icon
+            $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change'); // Ensure enabled and off
+            $("#submit-draw").prop("disabled", false); // Re-enable confirm button
         }
 
-    $(".preset-crest-btn").removeClass('active'); // Deactivate other presets
-    $(this).addClass('active'); // Activate clicked preset
+    } else {
+        // === NORMAL MODE CLICK ===
+        if (currentDiamond === null) {
+            alert("Please select a draw type first.");
+            return;
+        }
+        // Deactivate other presets and activate the clicked one
+        $(".preset-crest-btn").removeClass('active');
+        $(this).addClass('active');
 
-    crestValue = parseInt($(this).data("value")); // Get value from button
-    $("#crestValue").text(crestValue); // Update the display span (even if hidden)
-    });
+        crestValue = selectedCrestValue; // Set the main crestValue
+        $("#crestValue").text(crestValue); // Update the display span
+    }
+});
+
+  //===================== RADIAL SLIDER =====================
+
+
   function drawRing(value) {
       if (!ctx) return;
 
@@ -568,116 +669,243 @@ $("#toggle-session-mode").click(function() {
     });
 }
 
-  $("#submit-draw").click(function() {
+$("#submit-draw").click(function() {
+    // --- ADD THIS CHECK: Prevent submit during 10x mode ---
+    if (inTenDrawMode) {
+         alert("Please finish clicking the 10 results for the 10x draw first, or Cancel.");
+         return; // Don't submit normally during 10x mode
+    }
+    // --------------------------------------------------------
+
+    // Check if draw type is selected (for normal/single entry)
     if (currentDiamond === null) {
-        alert("Select draw type.");
+        alert("Select draw type first.");
         return;
     }
-    // Crest value is already set by preset click or slider change
 
-    // --- Create the entry object ---
-    let entry = {
-        // Use a temporary ID for the session list rendering
-        tempId: 'session-' + Date.now(),
-        diamond: currentDiamond,
-        crests: crestValue,
-        timestamp: Date.now(), // Use current time for session logging
-        User: currentUser,
-        synced: false // Mark as not synced initially
+    // Check if a crest value is selected (either via preset or slider)
+    // Add check to ensure crestValue isn't still the minValue if using presets/slider
+    let isCrestSelected = $(".preset-crest-btn.active").length > 0 || $("#extendedMode").is(":checked"); // Basic check
+    // More robust check: ensure a preset is active OR extended mode is on (value is handled by crestValue variable)
+    if (!isCrestSelected) {
+         alert("Please select the number of crests received using the preset buttons or Extended Mode.");
+         return;
+     }
+     // Optional stricter check: prevent submitting 0 in non-extended mode unless it's the Prize Pool button
+     if (!$("#extendedMode").is(":checked") && crestValue === 0 && !$(".preset-crest-btn[data-value='0']").hasClass('active')) {
+          if (!confirm("Record 0 crests without selecting Prize Pool?")) {
+                return;
+          }
+     }
+
+
+    // --- Create the entry object (for normal mode or session mode AFTER 10x) ---
+     // This section now ONLY runs for single draw entries (not the 10x clicks)
+    let entryData = {
+         diamond: currentDiamond,
+         crests: crestValue,
+         timestamp: Date.now(),
+         User: currentUser
     };
 
     if (inSessionMode) {
-        // === SESSION MODE LOGIC ===
-        console.log("Adding to session:", entry);
-        sessionEntries.push(entry); // Add to the temporary array
+       // === SESSION MODE LOGIC (for single entries) ===
+       let sessionEntry = {
+            ...entryData,
+            tempId: 'session-' + entryData.timestamp, // Use timestamp for unique session ID
+            synced: false
+       };
+       console.log("Adding SINGLE entry to session:", sessionEntry);
+       sessionEntries.push(sessionEntry);
+       localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
+       renderSessionList();
 
-    // --- ADD THIS LINE to save after adding ---
-    localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
-    // -------------------------------------------
-        renderSessionList(); // Update the session list UI
-
-        // Perform partial reset (keep draw type, reset crests)
-        $("#extendedMode").prop("checked", false);
-        maxValue = 20;
-        $("#slider-container").addClass("d-none");
-        $("#preset-buttons-container").removeClass("d-none");
-        crestValue = minValue;
-        $("#crestValue").text(minValue);
-        $(".preset-crest-btn").removeClass('active');
-        if (ctx) { drawRing(minValue); }
-        // NOTE: Active draw option button remains active
+       // Perform partial reset (keep draw type, reset crests selection)
+       $("#extendedMode").prop("checked", false); // Turn off extended mode
+       maxValue = 20;
+       $("#slider-container").addClass("d-none"); // Hide slider
+       $("#preset-buttons-container").removeClass("d-none"); // Show presets
+       crestValue = minValue; // Reset crest value variable
+       $("#crestValue").text(minValue); // Reset display
+       $(".preset-crest-btn").removeClass('active'); // Deactivate preset button
+       if (ctx) { drawRing(minValue); }
+        // Note: Draw type button remains active
 
     } else {
-        // === NORMAL MODE LOGIC (Modified for Promise) ===
-        console.log("Submitting directly:", entry);
-        // 1. Optimistic UI Update (to main history) - uses 'local-' prefix
-        let historyEntry = { ...entry, id: 'local-' + entry.timestamp }; // Use different temp ID for history
+        // === NORMAL MODE LOGIC (for single entries) ===
+        let historyEntry = {
+            ...entryData,
+            id: 'local-' + entryData.timestamp, // Use 'local-' prefix for optimistic UI in history
+            synced: false // Explicitly mark for history rendering logic
+        };
+        console.log("Submitting directly:", historyEntry);
+
+        // 1. Optimistic UI Update
         localData[currentUser].unshift(historyEntry);
-        updateHistory(); // Update main history list immediately
-        updateStats();   // Update stats immediately
-        updateCompare(); // Update compare immediately
+        updateHistory();
+        updateStats();
+        updateCompare();
 
-        // Show loader for single sync
+        // 2. Show loader & Submit to Sheet
         $("#loader").removeClass("d-none");
+        submitEntryToSheet(entryData) // Pass the core data
+             .done(function(response) {
+                 console.log("Entry submitted: ", response);
+                 fetchRemoteData(() => {
+                     updateHistory();
+                     updateStats();
+                     updateCompare();
+                     $("#loader").addClass("d-none");
+                 });
+             })
+             .fail(function(jqXHR, textStatus, errorThrown) {
+                 console.error("Submit Error:", textStatus, errorThrown);
+                 alert("Error submitting draw. Entry added locally but not synced.");
+                 // Update the specific history entry to show a failure icon
+                  const failedEntryElement = $(`#history-list .history-card[data-entry-id='${historyEntry.id}']`);
+                  if(failedEntryElement.length > 0) {
+                       failedEntryElement.find('.sync-indicator').html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed"></i>');
+                  }
+                  $("#loader").addClass("d-none");
+             });
 
-        // 2. Submit to Sheet (returns a promise)
-        submitEntryToSheet({ diamond: entry.diamond, crests: entry.crests, timestamp: entry.timestamp, User: entry.User })
-            .done(function(response) {
-                console.log("Entry submitted: ", response);
-                // Fetch data AFTER successful single submission to update IDs etc.
-                fetchRemoteData(() => {
-                    updateHistory(); // Refresh history potentially with real ID
-                    updateStats();
-                    updateCompare();
-                    $("#loader").addClass("d-none");
-                });
-            })
-            .fail(function(jqXHR, textStatus, errorThrown) {
-                console.error("Submit Error:", textStatus, errorThrown);
-                alert("Error submitting draw. Entry added locally but not synced.");
-                // Maybe add a visual indicator to the failed local entry in history?
-                 $("#loader").addClass("d-none");
-                 // We might need to update the specific history entry to show a failure icon
-                 // This requires finding the 'local-' entry and changing its appearance
-            })
-            .always(function() {
-                 // Hide loader if it's still visible for any reason
-                 // $("#loader").addClass("d-none"); // Already handled in done/fail usually
-            });
+         // 3. Notification
+         if ("Notification" in window && Notification.permission === "granted") {
+             new Notification("Draw Recorded", {
+                  body: `Gained ${entryData.crests} tokens!`, // Use entryData
+                  icon: "assets/token.png"
+              });
+         }
 
-
-        // 3. Notification
-        if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("Draw Recorded", { /* ... */ });
-        }
-
-        // 4. Perform partial reset (same as session mode now)
-         $("#extendedMode").prop("checked", false);
+         // 4. Perform partial reset (keep draw type, reset crests selection)
+         $("#extendedMode").prop("checked", false); // Turn off extended mode
          maxValue = 20;
-         $("#slider-container").addClass("d-none");
-         $("#preset-buttons-container").removeClass("d-none");
-         crestValue = minValue;
-         $("#crestValue").text(minValue);
-         $(".preset-crest-btn").removeClass('active');
+         $("#slider-container").addClass("d-none"); // Hide slider
+         $("#preset-buttons-container").removeClass("d-none"); // Show presets
+         crestValue = minValue; // Reset crest value variable
+         $("#crestValue").text(minValue); // Reset display
+         $(".preset-crest-btn").removeClass('active'); // Deactivate preset button
          if (ctx) { drawRing(minValue); }
+          // Note: Draw type button remains active
     }
 });
 
-  $("#cancel-draw").click(function() {
-      if (confirm("Cancel draw input?")) {
-          currentDiamond = null;
-          $("#selected-draw-label").text("");
-          $("#extendedMode").prop("checked", false);
-          maxValue = 20;
-          crestValue = minValue;
-          $("#crestValue").text(minValue);
-          $(".preset-crest-btn").removeClass('active'); // --- ADD THIS LINE ---
-          if (ctx) {
-              drawRing(minValue);
-          }
-          $(".draw-option").removeClass('active'); 
-      }
-  });
+$("#cancel-draw").click(function() {
+    if (inTenDrawMode) {
+        // Special cancel for 10x mode
+         if (confirm("Cancel entering the current 10x draw results?")) {
+             inTenDrawMode = false;
+             tenDrawCounter = 0;
+             // Reset UI fully
+             $(".draw-option").removeClass('active');
+             $(".preset-crest-btn").removeClass('active');
+             currentDiamond = null;
+             crestValue = minValue;
+             $("#crestValue").text(crestValue);
+             $("#selected-draw-label").text("");
+             $("#draw-type-icon").attr("src", "assets/other_draw.png");
+             // --- Ensure Extended Mode is enabled and UNCHECKED on cancel ---
+             $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
+             $("#submit-draw").prop("disabled", false);
+             // ------------------------------------------------------------
+         }
+    } else {
+       // ... normal cancel logic (which also calls .trigger('change') on extendedMode) ...
+        if (confirm("Cancel current draw input?")) {
+             currentDiamond = null;
+             $("#selected-draw-label").text("");
+             // Ensure extended mode switch is usable and unchecked
+             $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
+             maxValue = 20;
+             crestValue = minValue;
+             $("#crestValue").text(minValue);
+             $(".preset-crest-btn").removeClass('active');
+             if (ctx) {
+                 drawRing(minValue);
+             }
+             $(".draw-option").removeClass('active');
+         }
+    }
+});
+
+
+//===================== SESSION ENTRY DELETE (HOLD) =====================
+
+//===================== SESSION ENTRY DELETE (HOLD) =====================
+$(document).on('mousedown touchstart', '#session-entries-list .session-entry-card', function(e) {
+    if (e.type === 'mousedown' && e.button !== 0) return;
+
+    clearTimeout(holdTimer);
+    $('#session-entries-list .session-entry-card').not(this).removeClass('show-delete');
+
+    const $card = $(this);
+    const tempId = $card.data('tempid');
+
+
+    holdTimer = setTimeout(() => {
+        $card.addClass('show-delete');
+        // Console log below should now show the CORRECT tempId after fixing renderSessionList
+        console.log('Hold detected on:', tempId);
+    }, HOLD_DURATION);
+});
+
+// Clear timer if mouse leaves or touch ends/is cancelled before hold duration
+$(document).on('mouseup mouseleave touchend touchcancel', '#session-entries-list .session-entry-card', function(e) {
+    clearTimeout(holdTimer);
+    
+});
+
+// Handle click on the actual delete button (X) inside the overlay
+$(document).on('click', '.delete-session-entry-btn', function(e) {
+    e.preventDefault(); // Prevent default button action
+    e.stopPropagation(); // Stop click from bubbling up to the card container
+
+    const $card = $(this).closest('.session-entry-card');
+    const tempIdToDelete = $card.data('tempid');
+
+    console.log('Attempting to delete session entry:', tempIdToDelete);
+
+    // Find index in the array based on tempId
+    const indexToDelete = sessionEntries.findIndex(entry => entry.tempId === tempIdToDelete);
+
+    if (indexToDelete > -1) {
+        // Remove from array
+        sessionEntries.splice(indexToDelete, 1);
+        // Update localStorage
+        localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
+        // Re-render the list (this will remove the item visually)
+        renderSessionList();
+        console.log('Entry deleted, list updated.');
+    } else {
+        console.warn('Could not find session entry in array to delete with tempId:', tempIdToDelete);
+         // As a fallback, just remove the visual element if data is inconsistent
+         $card.remove();
+         $("#session-count-badge").text(sessionEntries.length); // Ensure badge is updated
+    }
+});
+// --- End Session Entry Delete ---
+
+// Inside the SESSION ENTRY DELETE (HOLD) block...
+$(document).on('mousedown touchstart', '#session-entries-list .session-entry-card', function(e) {
+    if (e.type === 'mousedown' && e.button !== 0) return;
+
+    clearTimeout(holdTimer);
+    $('#session-entries-list .session-entry-card').not(this).removeClass('show-delete');
+
+    const $card = $(this);
+    const tempId = $card.data('tempid');
+
+    // --- ADD/MODIFY THIS ---
+    // Prevent default for both touch and mouse to potentially stop scroll/selection during hold detection
+    e.preventDefault();
+    // ----------------------
+
+    holdTimer = setTimeout(() => {
+        $card.addClass('show-delete');
+        console.log('Hold detected on:', tempId); // Should log correct ID now
+    }, HOLD_DURATION);
+
+});
 
 //===================== SYNC SESSION ENTRIES =====================
 $("#sync-session-entries").click(function() {
@@ -790,54 +1018,65 @@ $("#sync-session-entries").click(function() {
 
         }); // End Promise.allSettled.then
 }); // End sync button click handler
-  //===================== RENDER SESSION LIST =====================
+//===================== RENDER SESSION LIST =====================
 function renderSessionList() {
     let sessionList = $("#session-entries-list");
     sessionList.empty(); // Clear current list
 
     if (sessionEntries.length === 0) {
-        // Use text-white or text-light depending on your background
         sessionList.html('<p class="text-light text-center small mt-2 mb-0">No draws added in this session yet.</p>');
     } else {
-        // Reverse the array temporarily for display order (newest first)
-        // Or keep as is for oldest first - adjust slice/reverse as needed
+        // Display newest first
         let reversedSessionEntries = [...sessionEntries].reverse();
 
         reversedSessionEntries.forEach(entry => {
-            // Generate text/icon for draw type (cost)
+            // --- DEBUGGING: Log the entry object and its tempId ---
+            console.log("Rendering session entry:", entry);
+            console.log("Entry tempId value:", entry.tempId);
+            // ----------------------------------------------------
+
+            // Ensure tempId is treated as a string for the attribute
+            const tempIdValue = String(entry.tempId || '');
+
             let diamondDisplayHtml = (entry.diamond === 0) ?
                 `<img src="assets/mystical_dial.png" class="small-icon me-1" alt="Free Draw"> Free` :
                 `${entry.diamond} <img class='small-icon mx-1' src='assets/diamond.png' alt='Diamond'>`;
 
-            // Generate text/icon for crests earned
             let crestDisplayHtml = `${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">`;
-            // Handle the "Prize Pool Item" case specifically if needed
-            if (entry.diamond > 0 && entry.crests === 0) { // Example condition: Spent diamonds but got 0 crests could mean prize pool
-                // Or use the Prize Pool button value if that's always 0 crests:
-                // if (entry.crests === 0 && entry.diamond === /* value of prize pool button if non-zero */ )
-                // This check might need refinement based on how you definitively log prize pool items
-                crestDisplayHtml = `<img src="assets/prize_pool_item.png" class="small-icon ms-1" alt="Prize Pool Item">`;
-            }
+             if (entry.crests === 0 && entry.diamond > 0) {
+                 crestDisplayHtml = `<img src="assets/prize_pool_item.png" class="small-icon ms-1" alt="Prize Pool Item"> Item`;
+             }
 
-
-            // Determine sync status icon
-            let syncIconHtml = entry.synced ? // (This will usually be false here)
+            let syncIconHtml = entry.synced ?
                  '<span class="sync-status-icon" title="Synced"><i class="fa-solid fa-check text-success"></i></span>' :
                  '<span class="sync-status-icon" title="Pending Sync"><i class="fa-solid fa-clock text-warning"></i></span>';
 
-            // Construct the list item HTML - **Corrected template literals and structure**
+            // *** Ensure template literal syntax `${...}` is used correctly ***
             let listItem = `
-                <div class="list-group-item session-entry-card" data-tempid="${entry.tempId}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="entry-details d-flex align-items-center flex-grow-1"> ${diamondDisplayHtml}
-                            <i class="fa-solid fa-arrow-right text-muted mx-2"></i> ${crestDisplayHtml}
+                <div class="list-group-item session-entry-card" data-tempid="${tempIdValue}">
+                    <div class="delete-overlay">
+                         <button class="btn btn-danger btn-sm delete-session-entry-btn p-0" style="width: 25px; height: 25px; line-height: 1; border-radius: 50%;" title="Delete this entry">
+                              <i class="fa-solid fa-times"></i>
+                         </button>
+                    </div>
+                    <div class="session-content d-flex justify-content-between align-items-center">
+                        <span class="entry-details d-flex align-items-center flex-grow-1">
+                            ${diamondDisplayHtml}
+                            <i class="fa-solid fa-arrow-right text-muted mx-2"></i>
+                            ${crestDisplayHtml}
                         </span>
-                        ${syncIconHtml} </div>
+                        ${syncIconHtml}
+                    </div>
                 </div>`;
+
+             // --- DEBUGGING: Log the generated HTML string ---
+             console.log("Generated listItem HTML:", listItem);
+             // ---------------------------------------------
+
             sessionList.append(listItem);
         });
     }
-    // Update badge count outside the loop
+    // Update badge count
     $("#session-count-badge").text(sessionEntries.length);
 }
   //===================== UPDATE HISTORY / HOME LIST =====================

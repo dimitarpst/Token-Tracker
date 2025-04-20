@@ -492,3 +492,46 @@ body.aylin {
 #toggle-session-mode.active i {
   margin-right: 5px; /* Space between icon and text */
 }
+
+#preset-buttons-container .preset-crest-btn.active-flash {
+  background-color: #FFD4D4 !important; /* Use important to override other styles temporarily */
+  color: #333 !important;
+  transition: background-color 0.05s ease-in-out;
+}
+
+/* Make session card relative for absolute positioning */
+.session-entry-card {
+  position: relative;
+  /* Add some padding to prevent text overlap */
+  padding-right: 35px; /* Space for sync icon */
+}
+
+/* Style the delete overlay */
+.delete-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(220, 53, 69, 0.75); /* Semi-transparent danger red */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0; /* Hidden by default */
+  pointer-events: none; /* Ignore clicks when hidden */
+  transition: opacity 0.2s ease-in-out;
+  border-radius: inherit; /* Match parent card's radius */
+   z-index: 5; /* Ensure it's above the content */
+}
+
+/* Style to show the overlay */
+.session-entry-card.show-delete .delete-overlay {
+  opacity: 1;
+  pointer-events: auto; /* Allow clicks when visible */
+}
+
+/* Ensure card content is below overlay */
+.session-entry-card .session-content {
+   position: relative;
+   z-index: 1;
+}
