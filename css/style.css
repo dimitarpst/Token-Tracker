@@ -459,11 +459,6 @@ body.aylin {
    padding-bottom: 0.5rem;
 }
 
-.session-list-scroll {
-  max-height: 300px; /* Limit height and enable scroll */
-  overflow-y: auto;
-}
-
 /* Styling for individual entries in the session list */
 .session-entry-card {
   background-color: rgba(255, 255, 255, 0.05);

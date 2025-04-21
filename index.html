@@ -161,13 +161,25 @@
                       </button>
                   </div>
 
-                    <div id="session-entries-container" class="container mt-4 d-none">
+                  <div id="session-entries-container" class="container mt-4 d-none">
                     <div class="session-header d-flex justify-content-between align-items-center mb-2">
                         <h4 class="text-light mb-0">Session Draws</h4>
                         <button id="sync-session-entries" class="btn btn-sm btn-primary">
                             <i class="fa-solid fa-cloud-arrow-up"></i> Sync
                             <span id="session-count-badge" class="badge bg-light text-dark ms-1">0</span>
                         </button>
+                    </div>
+                
+                    <div id="session-action-bar" class="d-flex justify-content-between align-items-center p-2 mb-2 bg-info-subtle text-dark rounded d-none">
+                        <div>
+                            <button id="cancel-session-selection" type="button" class="btn-close" aria-label="Close"></button>
+                            <span id="session-select-count" class="ms-2 fw-bold">0 selected</span>
+                        </div>
+                        <div>
+                            <button id="delete-selected-session-items" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                            </div>
                     </div>
                     <div id="session-entries-list" class="list-group session-list-scroll">
                         </div>
