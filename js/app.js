@@ -128,7 +128,7 @@ function initUser(user) {
             $(`.draw-option[data-diamond="${tenDrawDiamondCost}"]`).addClass('active');
             $("#preset-buttons-container").removeClass("d-none");
             $("#slider-container").addClass("d-none");
-            $("#extendedMode").prop("checked", false).prop("disabled", true);
+            $("#extendedMode").prop("checked", false); 
             $("#submit-draw").prop("disabled", true);
 
         } else {
@@ -344,6 +344,7 @@ $(".draw-option").click(function() {
     $(".preset-crest-btn").removeClass('active');
     crestValue = minValue; $("#crestValue").text(crestValue);
     $("#extendedMode").prop("checked", false).trigger('change');
+    $("#submit-draw").prop("disabled", true); 
 
     const diamond = parseInt($(this).data("diamond"));
     const isTenDraw = diamond === 450 || diamond === 500;
@@ -376,7 +377,7 @@ $(".draw-option").click(function() {
         $("#draw-type-icon").attr("src", "assets/diamond.png");
         $("#preset-buttons-container").removeClass("d-none");
         $("#slider-container").addClass("d-none");
-        $("#extendedMode").prop("checked", false).prop("disabled", true);
+        $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
         $("#submit-draw").prop("disabled", true);
 
     } else {
@@ -448,28 +449,39 @@ $("#toggle-session-mode").click(function() {
     }
 });
 
-  //===================== EXTENDED MODE =====================
+//===================== EXTENDED MODE =====================
+$("#extendedMode").change(function() {
+    const isChecked = $(this).is(":checked");
 
-  $("#extendedMode").change(function() {
-    if ($(this).is(":checked")) {
-        // Extended Mode ON
+    if (isChecked) { // Extended Mode ON
         maxValue = 300;
-        $("#preset-buttons-container").addClass("d-none"); // Hide presets
-        $("#slider-container").removeClass("d-none"); // Show slider
-        crestValue = minValue; // Reset value when switching mode
-        $("#crestValue").text(crestValue);
-        $(".preset-crest-btn").removeClass('active'); // Deactivate preset buttons
-        if (ctx) {
-            drawRing(crestValue);
-        }
-    } else {
-        // Extended Mode OFF
-        maxValue = 20; // Or keep 300 if presets can exceed 20? Let's stick to 20 for now.
-        $("#preset-buttons-container").removeClass("d-none"); // Show presets
-        $("#slider-container").addClass("d-none"); // Hide slider
-        crestValue = minValue; // Reset value when switching mode
-         $("#crestValue").text(crestValue); // Optionally hide/clear this if only presets matter? Let's keep it updated.
-        $(".preset-crest-btn").removeClass('active'); // Deactivate preset buttons
+        $("#preset-buttons-container").addClass("d-none");
+        $("#slider-container").removeClass("d-none");
+         // If we are in 10x mode, enable Confirm button for slider input
+         if (inTenDrawMode) {
+              $("#submit-draw").prop("disabled", false); // <<< Enables Confirm
+         }
+        // Reset slider value only if NOT in 10x mode (keep current progress otherwise)
+         if (!inTenDrawMode) {
+             crestValue = minValue;
+             $("#crestValue").text(crestValue);
+             $(".preset-crest-btn").removeClass('active');
+             if (ctx) { drawRing(crestValue); }
+         } else {
+              // If in 10x mode, just draw the ring without resetting value
+              if (ctx) { drawRing(crestValue); } // Reflect current (potentially preset-clicked) value initially
+         }
+
+    } else { // Extended Mode OFF
+        maxValue = 20;
+        $("#preset-buttons-container").removeClass("d-none");
+        $("#slider-container").addClass("d-none");
+         // If we are in 10x mode, disable Confirm button again (input via presets)
+         if (inTenDrawMode) {
+             $("#submit-draw").prop("disabled", true); // <<< Disables Confirm
+         }
+        // Reset preset button selection
+         $(".preset-crest-btn").removeClass('active');
     }
 });
 
@@ -696,9 +708,9 @@ $(document).on("click", ".preset-crest-btn", function() {
 
 $("#submit-draw").click(function() {
     // --- ADD THIS CHECK: Prevent submit during 10x mode ---
-    if (inTenDrawMode) {
-         alert("Please finish clicking the 10 results for the 10x draw first, or Cancel.");
-         return; // Don't submit normally during 10x mode
+    if (inTenDrawMode && !$("#extendedMode").is(":checked")) { // <<< Allow if Extended Mode is ON
+        alert("Please finish clicking the 10 results for the 10x draw first, or Cancel.");
+        return; // Don't submit normally during 10x mode *unless* Extended Mode is active
     }
     // --------------------------------------------------------
 
@@ -722,7 +734,73 @@ $("#submit-draw").click(function() {
                 return;
           }
      }
+     if (inTenDrawMode && $("#extendedMode").is(":checked")) {
+        // === HANDLE 10x SUBMISSION VIA EXTENDED MODE (SLIDER) ===
+        const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`;
+        const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
+        const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
+        const user10xCostKey = `drawTracker10xCost_${currentUser}`;
+        const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
+        const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
+    
+        tenDrawCounter++;
+        // crestValue is already set by the radial slider interaction
+    
+        let entry = {
+            tempId: `session-${tenDrawTimestamp}-${tenDrawCounter}`,
+            diamond: tenDrawDiamondCost,
+            crests: crestValue, // Use the slider value
+            timestamp: tenDrawTimestamp,
+            batchId: tenDrawBatchId,
+            User: currentUser,
+            synced: false
+        };
 
+        console.log(`Adding 10x result ${tenDrawCounter}/10 via Extended Mode (Entry Object):`, entry);
+    
+        sessionEntries.push(entry);
+        try { // Save session entries list
+            localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
+        } catch (e) { console.error("Error saving session entry to localStorage:", e); }
+    
+        renderSessionList();
+    
+        // Update the status label AND 10x counter in storage
+        if (tenDrawCounter < 10) {
+            $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
+            // Update counter in localStorage
+            try { localStorage.setItem(user10xCounterKey, tenDrawCounter); } catch(e) {}
+            // --- Important: Do NOT reset the slider value here ---
+            // Reset preset button selection in case user clicked one before switching
+            $(".preset-crest-btn").removeClass('active');
+    
+        } else {
+            // === FINISHED 10x DRAW (via Extended Mode Submit) ===
+            alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
+            inTenDrawMode = false;
+            tenDrawCounter = 0;
+    
+            // Clear 10x state from localStorage
+            localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
+            localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
+            localStorage.removeItem(user10xBatchIdKey);
+    
+            // Reset UI fully
+            $(".draw-option").removeClass('active'); $(".preset-crest-btn").removeClass('active');
+            currentDiamond = null; crestValue = minValue; // Reset crestValue now
+            $("#crestValue").text(crestValue); $("#selected-draw-label").text("");
+            $("#draw-type-icon").attr("src", "assets/other_draw.png");
+            // Ensure extended mode is off and slider is hidden after finishing
+            $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
+            $("#submit-draw").prop("disabled", false);
+            if (ctx) { drawRing(minValue); } // Reset slider visual
+    
+            // Clear 10x state vars from memory
+            tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
+        }
+    
+        return; // <<< IMPORTANT: Stop further execution in this click handler
+    }
 
     // --- Create the entry object (for normal mode or session mode AFTER 10x) ---
      // This section now ONLY runs for single draw entries (not the 10x clicks)
