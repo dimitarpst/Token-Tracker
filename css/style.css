@@ -530,3 +530,66 @@ body.aylin {
    position: relative;
    z-index: 1;
 }
+
+/* Daily Summary Screen Styling */
+#daily-summary-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: linear-gradient(135deg, #FFD4D4, #FFFFE8);
+  z-index: 950; /* Below welcome screen */
+  text-align: center;
+  padding: 20px;
+  color: #333; /* Dark text */
+  /* Ensure it's hidden initially if d-none isn't enough */
+  /* display: none; */ /* Managed by d-none */
+}
+
+.daily-summary-box {
+  background: rgba(255, 255, 255, 0.75); /* Semi-transparent white background */
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  max-width: 500px; /* Limit width */
+  width: 100%;
+}
+
+.summary-user-icon {
+  width: 80px; /* Adjust size */
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #FFD4D4;
+}
+
+/* Button Styling for Contrast */
+#daily-summary-screen .btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+#daily-summary-screen .btn-outline-secondary {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+#daily-summary-screen .btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Optional styling for daily discount text */
+#mitko-daily-discount,
+#aylin-daily-discount {
+    font-size: 0.9rem; /* Slightly smaller */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    line-height: normal;
+}
+/* Ensure icon in discount text is small */
+#mitko-daily-discount img.small-icon,
+#aylin-daily-discount img.small-icon {
+    height: 1em; /* Match text height */
+    width: auto;
+    vertical-align: baseline;
+}

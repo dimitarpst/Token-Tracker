@@ -41,6 +41,42 @@
         </div>
     </div>
 
+    <div id="daily-summary-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-center d-none">
+        <div class="daily-summary-box"> <h2 class="mb-4 text-dark text-center">Today's Draws</h2> <div class="row justify-content-center align-items-start mb-4">
+    
+            <div class="col-6 text-center">
+                <img src="assets/fredrinn.png" alt="Mitko" class="summary-user-icon mb-2" />
+                <p class="mb-1 text-dark fs-5">Mitko</p>
+                <p class="fw-bold text-dark fs-3 mb-0">
+                    <span id="mitko-today-count">0</span> draws
+                </p>
+                <!-- ADDED: Daily Discount Info -->
+                <p class="mt-2 mb-0 text-muted" id="mitko-daily-discount">
+                    Daily 25💎: <span class="fw-normal">Checking...</span>
+                </p>
+           </div>
+       
+           <!-- Aylin's Column (col-6) -->
+           <div class="col-6 text-center">
+                <img src="assets/lylia.png" alt="Aylin" class="summary-user-icon mb-2" />
+                <p class="mb-1 text-dark fs-5">Aylin</p>
+                <p class="fw-bold text-dark fs-3 mb-0">
+                    <span id="aylin-today-count">0</span> draws
+                </p>
+                <!-- ADDED: Daily Discount Info -->
+                <p class="mt-2 mb-0 text-muted" id="aylin-daily-discount">
+                    Daily 25💎: <span class="fw-normal">Checking...</span>
+                </p>
+           </div>
+    
+            </div> <div class="text-center">
+                <button id="continue-to-app" class="btn btn-success btn-lg mt-3 me-2">Continue</button>
+                <button id="hide-summary-today" class="btn btn-outline-secondary btn-lg mt-3">Hide for Today</button>
+            </div>
+    
+        </div> 
+    </div>
+
     <div id="main-app" class="d-none">
         <nav id="sidebar" class="sidebar">
             <div class="d-flex justify-content-center align-items-center pb-3">

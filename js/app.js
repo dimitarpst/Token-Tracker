@@ -53,15 +53,19 @@ const HOLD_DURATION = 750; // Milliseconds for long press
 
   //===================== USER SELECTION =====================
 
-  $(".choose-user").click(function() {
-      currentUser = $(this).data("user");
-      localStorage.setItem("currentUser", currentUser);
-      initUser(currentUser);
-      $("#welcome-screen").fadeOut(300, function() {
-          $(this).addClass("d-none");
-      });
-      $("#main-app").removeClass("d-none");
-  });
+// Inside $(document).ready()
+    $(".choose-user").click(function() {
+        currentUser = $(this).data("user");
+        localStorage.setItem("currentUser", currentUser);
+
+        $("#welcome-screen").fadeOut(300, function() {
+            $(this).addClass("d-none");
+            // Call initUser AFTER welcome screen is hidden
+            // initUser will now handle fetching data and deciding the next screen
+            initUser(currentUser);
+        });
+        // DO NOT show main-app here anymore
+    });
 
 //===================== INIT USER =====================
 function initUser(user) {
@@ -83,6 +87,7 @@ function initUser(user) {
     const user10xCostKey = `drawTracker10xCost_${currentUser}`;
     const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
     const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
+    const LAST_ACTIVE_TAB_KEY = 'drawTrackerLastActiveTab'; // Make sure this key is defined if not already global
 
     // --- Load and Restore General Session State ---
     try {
@@ -106,7 +111,6 @@ function initUser(user) {
         console.error(`Error loading session state for ${currentUser} from localStorage:`, e);
         inSessionMode = false; sessionEntries = [];
         localStorage.removeItem(userSessionModeKey); localStorage.removeItem(userSessionEntriesKey);
-        // Also reset UI elements related to session state here in case of error
         $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
         $("#session-entries-container").addClass("d-none"); renderSessionList();
     }
@@ -128,8 +132,9 @@ function initUser(user) {
             $(`.draw-option[data-diamond="${tenDrawDiamondCost}"]`).addClass('active');
             $("#preset-buttons-container").removeClass("d-none");
             $("#slider-container").addClass("d-none");
-            $("#extendedMode").prop("checked", false); 
-            $("#submit-draw").prop("disabled", true);
+             // Ensure Extended Mode switch is NOT disabled on restore
+            $("#extendedMode").prop("checked", false);
+            $("#submit-draw").prop("disabled", true); // Submit initially disabled
 
         } else {
             inTenDrawMode = false; tenDrawCounter = 0; tenDrawDiamondCost = 0;
@@ -145,39 +150,100 @@ function initUser(user) {
 
     // --- DETERMINE AND SET INITIAL ACTIVE TAB ---
     let initialTabId = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
-    // *** ENSURE THIS LINE IS PRESENT ***
     const validTabIds = ['home', 'history', 'stats', 'compare', 'settings'];
-    // ***********************************
     const defaultTabId = 'home';
     if (!initialTabId || !validTabIds.includes(initialTabId)) {
         initialTabId = defaultTabId;
     }
     console.log(`Restoring last active tab: ${initialTabId}`);
-    $(".tab-content").addClass("d-none"); $("#tab-" + initialTabId).removeClass("d-none");
-    $("#sidebar .nav-link").removeClass('active'); $(`#sidebar .nav-link[data-tab='${initialTabId}']`).addClass('active');
+    $(".tab-content").addClass("d-none");
+    $("#tab-" + initialTabId).removeClass("d-none"); // Show the correct tab content
+    $("#sidebar .nav-link").removeClass('active');
+    $(`#sidebar .nav-link[data-tab='${initialTabId}']`).addClass('active'); // Highlight the correct sidebar link
 
     // --- Reset draw input state ONLY IF NOT in restored 10x mode ---
+     // Also find minValue definition, assuming it's 0 globally or defined earlier
+     // Let's assume minValue = 0 for this context
+     const minValue = 0; // Add this if minValue is not defined globally
     if (!inTenDrawMode) {
          console.log("Resetting draw input area (not in 10x mode)");
-         if (ctx) { drawRing(minValue); }
-         maxValue = 20; crestValue = minValue;
+         // Ensure ctx is defined (radial slider context)
+         const radialCanvas = document.getElementById("radialSlider");
+         let ctx = radialCanvas ? radialCanvas.getContext("2d") : null;
+         if (ctx) { drawRing(minValue); } // Assuming drawRing function exists
+         maxValue = 20; crestValue = minValue; // Assuming maxValue/crestValue are global or defined earlier
          $("#crestValue").text(crestValue);
          $("#extendedMode").prop("disabled", false).prop("checked", false);
-         $("#extendedMode").trigger('change'); // Trigger change after setting state
+         // Check if trigger('change') is necessary, might depend on your change handler
+         // $("#extendedMode").trigger('change'); // If needed to update UI based on check state
          $("#slider-container").addClass("d-none");
          $("#preset-buttons-container").removeClass("d-none");
          $(".preset-crest-btn").removeClass('active');
-         currentDiamond = null;
+         currentDiamond = null; // Assuming currentDiamond is global or defined earlier
          $(".draw-option").removeClass('active');
-          $("#selected-draw-label").text("");
-          $("#draw-type-icon").attr("src", "assets/other_draw.png");
-          $("#submit-draw").prop("disabled", false);
+         $("#selected-draw-label").text("");
+         $("#draw-type-icon").attr("src", "assets/other_draw.png");
+         $("#submit-draw").prop("disabled", false); // Enable submit for normal mode
     }
 
-    // Fetch remote data
+
+    // --- Fetch remote data THEN decide which screen to show ---
     fetchRemoteData(() => {
-        updateHistory(); updateStats(); updateCompare();
-    });
+        // This code runs AFTER data is fetched and localData is populated
+
+        const todayStr = getTodayDateString();
+        const hideUntilDate = localStorage.getItem('hideDailySummaryUntil');
+
+        // Check if the summary should be skipped for today
+        if (hideUntilDate === todayStr) {
+            console.log("Daily summary hidden for today.");
+            // Hide loader if it's still visible
+            $("#loader").addClass("d-none");
+            $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app directly
+        } else {
+            // Calculate today's draws AND discount info using the CORRECT function
+            const todaysInfo = calculateTodaysDrawsAndDiscount(localData);
+
+            // Update TOTAL counts
+            $("#mitko-today-count").text(todaysInfo.mitkoTotal);
+            $("#aylin-today-count").text(todaysInfo.aylinTotal);
+
+            // Update Mitko's DAILY DISCOUNT info
+            const mitkoDiscountEl = $("#mitko-daily-discount");
+            if (todaysInfo.mitkoDiscountCrests !== null) {
+                mitkoDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.mitkoDiscountCrests}</span> <img src="assets/token.png" class="small-icon" alt="token">`);
+                mitkoDiscountEl.removeClass('text-muted').addClass('text-dark'); // Make text darker if done
+            } else {
+                mitkoDiscountEl.html('Daily 25💎: <span class="fw-normal">Not done</span>');
+                mitkoDiscountEl.removeClass('text-dark').addClass('text-muted'); // Keep muted if not done
+            }
+
+            // Update Aylin's DAILY DISCOUNT info
+            const aylinDiscountEl = $("#aylin-daily-discount");
+            if (todaysInfo.aylinDiscountCrests !== null) {
+                 aylinDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.aylinDiscountCrests}</span> <img src="assets/token.png" class="small-icon" alt="token">`);
+                 aylinDiscountEl.removeClass('text-muted').addClass('text-dark');
+            } else {
+                 aylinDiscountEl.html('Daily 25💎: <span class="fw-normal">Not done</span>');
+                 aylinDiscountEl.removeClass('text-dark').addClass('text-muted');
+            }
+
+            // Hide loader before showing summary
+            $("#loader").addClass("d-none");
+             // Show the summary screen (fade it in)
+            console.log("Showing daily summary screen.");
+            $("#daily-summary-screen").hide().removeClass("d-none").fadeIn(300);
+
+            // IMPORTANT: Do NOT show the main-app yet.
+        }
+
+        // Update the data for the hidden tabs (History, Stats, Compare)
+        // These functions should be safe to call now that localData is populated
+        updateHistory();
+        updateStats();
+        updateCompare();
+
+    }); // End of fetchRemoteData callback
 }
 
   //===================== FETCH REMOTE DATA =====================
@@ -1972,4 +2038,121 @@ function buildMetricsHTML(m, isComparePage = false, compareFlags = {}) {
       currentX = 0;
   });
 
+  function getTodayDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(today.getDate()).padStart(2, '0');
+    return `<span class="math-inline">\{year\}\-</span>{month}-${day}`;
+}
+
+// Helper to get the timestamp for the start of a given date
+function getStartOfDayTimestamp(date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    return start.getTime();
+}
+
+// Helper to get the timestamp for the end of a given date
+function getEndOfDayTimestamp(date) {
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return end.getTime();
+}
+
+// function calculateTodaysDraws(allData) {
+//     // Get today's start and end timestamps
+//     const todayStart = getStartOfDayTimestamp(new Date());
+//     const todayEnd = getEndOfDayTimestamp(new Date());
+//     let mitkoCount = 0;
+//     let aylinCount = 0;
+
+//     // Ensure data exists before iterating
+//     if (allData && allData.Mitko) {
+//         allData.Mitko.forEach(entry => {
+//             // Check if the entry timestamp is within today
+//             if (entry.timestamp >= todayStart && entry.timestamp <= todayEnd) {
+//                 mitkoCount++;
+//             }
+//         });
+//     }
+//     if (allData && allData.Aylin) {
+//          allData.Aylin.forEach(entry => {
+//             // Check if the entry timestamp is within today
+//             if (entry.timestamp >= todayStart && entry.timestamp <= todayEnd) {
+//                 aylinCount++;
+//             }
+//         });
+//     }
+
+//     return { mitko: mitkoCount, aylin: aylinCount };
+// }
+
+// --- Daily Summary Screen Button Handlers ---
+
+$("#continue-to-app").click(function() {
+    $("#daily-summary-screen").fadeOut(300, function() {
+        $(this).addClass("d-none"); // Hide summary screen
+        $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app
+    });
+});
+
+$("#hide-summary-today").click(function() {
+    const todayStr = getTodayDateString();
+    localStorage.setItem('hideDailySummaryUntil', todayStr); // Store today's date
+    console.log("Hiding daily summary until end of day:", todayStr);
+
+    $("#daily-summary-screen").fadeOut(300, function() {
+        $(this).addClass("d-none"); // Hide summary screen
+        $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app
+    });
+});
+
+function calculateTodaysDrawsAndDiscount(allData) { // Renamed for clarity
+    const todayStart = getStartOfDayTimestamp(new Date());
+    const todayEnd = getEndOfDayTimestamp(new Date());
+    let mitkoCount = 0;
+    let aylinCount = 0;
+    let mitkoDiscountCrests = null; // Use null to indicate not found/done
+    let aylinDiscountCrests = null;
+
+    // Process Mitko's data (find total and first 25 diamond draw)
+    if (allData && allData.Mitko) {
+        // Sort Mitko's entries today by timestamp ascending to find the first easily
+        const mitkoTodayEntries = allData.Mitko
+            .filter(entry => entry.timestamp >= todayStart && entry.timestamp <= todayEnd)
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        mitkoCount = mitkoTodayEntries.length; // Total count for today
+
+        // Find the first entry where diamond is 25
+        const firstDiscountDraw = mitkoTodayEntries.find(entry => entry.diamond === 25);
+        if (firstDiscountDraw) {
+            mitkoDiscountCrests = firstDiscountDraw.crests; // Store the crests value
+        }
+    }
+
+    // Process Aylin's data (find total and first 25 diamond draw)
+    if (allData && allData.Aylin) {
+        // Sort Aylin's entries today by timestamp ascending
+        const aylinTodayEntries = allData.Aylin
+            .filter(entry => entry.timestamp >= todayStart && entry.timestamp <= todayEnd)
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        aylinCount = aylinTodayEntries.length; // Total count for today
+
+        // Find the first entry where diamond is 25
+        const firstDiscountDraw = aylinTodayEntries.find(entry => entry.diamond === 25);
+        if (firstDiscountDraw) {
+            aylinDiscountCrests = firstDiscountDraw.crests; // Store the crests value
+        }
+    }
+
+    return {
+        mitkoTotal: mitkoCount,
+        aylinTotal: aylinCount,
+        mitkoDiscountCrests: mitkoDiscountCrests,
+        aylinDiscountCrests: aylinDiscountCrests
+    };
+}
 });
