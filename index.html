@@ -16,6 +16,11 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     />
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/wrapped.css" />
+    <link rel="icon" href="assets/favicon.ico" sizes="any"> <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+
 </head>
 <body>
     <div id="swipe-zone"></div>
@@ -28,67 +33,60 @@
 
     <div id="welcome-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-start">
         <div class="welcome-choices d-flex flex-column flex-fill w-100">
-            <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Token Tracker</h1>
-            <p class="mb-4 text-dark">Who are you?</p>
+            <h1 class="mt-3 mb-2 text-dark">Welcome to MLBB Event Tracker</h1> <p class="mb-4 text-dark">Who are you?</p>
             <button class="user-button choose-user" data-user="Mitko">
-                <img src="assets/fredrinn.png" alt="Mitko" class="user-img-giant" />
+                <img src="assets/neobeasts/fredrinn.png" alt="Mitko" class="user-img-giant" />
                 <span class="fs-3 text-dark mt-2">Mitko</span>
             </button>
             <button class="user-button choose-user" data-user="Aylin">
-                <img src="assets/lylia.png" alt="Aylin" class="user-img-giant" />
+                 <img src="assets/neobeasts/lylia.png" alt="Aylin" class="user-img-giant" />
                 <span class="fs-3 text-dark mt-2">Aylin</span>
             </button>
         </div>
     </div>
 
     <div id="daily-summary-screen" class="vh-100 w-100 d-flex flex-column align-items-center justify-content-center d-none">
-        <div class="daily-summary-box"> <h2 class="mb-4 text-dark text-center">Today's Draws</h2> <div class="row justify-content-center align-items-start mb-4">
-    
-            <div class="col-6 text-center">
-                <img src="assets/fredrinn.png" alt="Mitko" class="summary-user-icon mb-2" />
-                <p class="mb-1 text-dark fs-5">Mitko</p>
-                <p class="fw-bold text-dark fs-3 mb-0">
-                    <span id="mitko-today-count">0</span> draws
-                </p>
-                <!-- ADDED: Daily Discount Info -->
-                <p class="mt-2 mb-0 text-muted" id="mitko-daily-discount">
-                    Daily 25💎: <span class="fw-normal">Checking...</span>
-                </p>
-           </div>
-       
-           <!-- Aylin's Column (col-6) -->
-           <div class="col-6 text-center">
-                <img src="assets/lylia.png" alt="Aylin" class="summary-user-icon mb-2" />
-                <p class="mb-1 text-dark fs-5">Aylin</p>
-                <p class="fw-bold text-dark fs-3 mb-0">
-                    <span id="aylin-today-count">0</span> draws
-                </p>
-                <!-- ADDED: Daily Discount Info -->
-                <p class="mt-2 mb-0 text-muted" id="aylin-daily-discount">
-                    Daily 25💎: <span class="fw-normal">Checking...</span>
-                </p>
-           </div>
-    
-            </div> <div class="text-center">
+        <div class="daily-summary-box">
+            <h2 class="mb-4 text-dark text-center">Today's Draws</h2>
+            <div class="row justify-content-center align-items-start mb-4">
+                <div class="col-6 text-center">
+                    <img id="summary-mitko-icon" src="" alt="Mitko" class="summary-user-icon mb-2" /> <p class="mb-1 text-dark fs-5">Mitko</p>
+                    <p class="fw-bold text-dark fs-3 mb-0">
+                        <span id="mitko-today-count">0</span> draws
+                    </p>
+                    <p class="mt-2 mb-0 text-muted" id="mitko-daily-discount">
+                        Daily 25💎: <span class="fw-normal">Checking...</span>
+                        </p>
+               </div>
+               <div class="col-6 text-center">
+                    <img id="summary-aylin-icon" src="" alt="Aylin" class="summary-user-icon mb-2" /> <p class="mb-1 text-dark fs-5">Aylin</p>
+                    <p class="fw-bold text-dark fs-3 mb-0">
+                        <span id="aylin-today-count">0</span> draws
+                    </p>
+                    <p class="mt-2 mb-0 text-muted" id="aylin-daily-discount">
+                        Daily 25💎: <span class="fw-normal">Checking...</span>
+                        </p>
+               </div>
+            </div>
+            <div class="text-center">
                 <button id="continue-to-app" class="btn btn-success btn-lg mt-3 me-2">Continue</button>
                 <button id="hide-summary-today" class="btn btn-outline-secondary btn-lg mt-3">Hide for Today</button>
             </div>
-    
-        </div> 
+        </div>
     </div>
 
     <div id="main-app" class="d-none">
         <nav id="sidebar" class="sidebar">
             <div class="d-flex justify-content-center align-items-center pb-3">
                 <div class="tracker-menu me-auto">
-                    <img id="event-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="event-logo">
+                    <img id="event-logo" src="" alt="Event Logo" class="event-logo">
                 </div>
                 <button id="close-sidebar" class="btn btn-link text-light ps-0 fs-4">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" data-tab="home" href="#"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li class="nav-item"><a class="nav-link active" data-tab="home" href="#"><i class="fa-solid fa-house"></i> Home</a></li>
                 <li class="nav-item"><a class="nav-link" data-tab="history" href="#"><i class="fa-solid fa-history"></i> History</a></li>
                 <li class="nav-item"><a class="nav-link" data-tab="stats" href="#"><i class="fa-solid fa-chart-line"></i> Stats</a></li>
                 <li class="nav-item"><a class="nav-link" data-tab="compare" href="#"><i class="fa-solid fa-arrows-left-right"></i> Compare</a></li>
@@ -98,8 +96,8 @@
         <div id="overlay"></div>
 
         <div id="top-bar" class="d-flex align-items-center text-light px-3">
-            <img id="nav-logo" src="assets/neobeasts_logo.png" alt="NeoBeasts Logo" class="nav-logo">
-            <img id="navbar-current-user-img" src="" alt="User" class="ms-auto" style="height: 100%; object-fit: cover;">
+             <img id="nav-logo" src="" alt="Event Logo" class="nav-logo">
+             <img id="navbar-current-user-img" src="" alt="User" class="ms-auto" style="height: 80%; object-fit: cover; border-radius: 50%;">
             <button id="open-sidebar" class="btn btn-link text-light">
                 <i class="fa-solid fa-bars"></i>
             </button>
@@ -107,39 +105,39 @@
 
         <div id="content">
             <section id="tab-home" class="tab-content">
-                <h3 class="mt-3 text-light">Add Draw</h3>
+                <h3 class="mt-3 text-light"><i class="fa-solid fa-plus me-2"></i>Add Draw</h3>
 
-                <div class="container text-center my-4">
+                <!-- <div class="container text-center my-4">
                     <button id="show-wrapped-btn" class="btn btn-lg btn-outline-light">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> View Your Draw Summary
                     </button>
-                </div>
+                </div> -->
 
                 <div id="draw-options" class="container">
                     <div class="row">
                         <div class="col-6 col-md-4 mb-3">
                             <button class="btn draw-option" data-diamond="0">
-                                <img src="assets/mystical_dial.png" alt="Free Draw" class="draw-img" /><br />Free Draw
+                                <img src="" alt="Free Draw" class="draw-img" /><br />Free Draw
                             </button>
                         </div>
                         <div class="col-6 col-md-4 mb-3">
                             <button class="btn draw-option" data-diamond="25">
-                                <img src="assets/diamond.png" alt="25 Diamonds" class="draw-img" /><br />25 Diamonds
+                                <img src="" alt="25 Diamonds" class="draw-img" /><br />25 Diamonds
                             </button>
                         </div>
                         <div class="col-6 col-md-4 mb-3">
                             <button class="btn draw-option" data-diamond="50">
-                                <img src="assets/diamond.png" alt="50 Diamonds" class="draw-img" /><br />50 Diamonds
+                                <img src="" alt="50 Diamonds" class="draw-img" /><br />50 Diamonds
                             </button>
                         </div>
                         <div class="col-6 col-md-4 mb-3">
                             <button class="btn draw-option" data-diamond="450">
-                                <img src="assets/diamond.png" alt="450 Diamonds" class="draw-img" /><br />450 Diamonds
+                                <img src="" alt="450 Diamonds" class="draw-img" /><br />450 Diamonds
                             </button>
                         </div>
                         <div class="col-6 col-md-4 mb-3">
                             <button class="btn draw-option" data-diamond="500">
-                                <img src="assets/diamond.png" alt="500 Diamonds" class="draw-img" /><br />500 Diamonds
+                                <img src="" alt="500 Diamonds" class="draw-img" /><br />500 Diamonds
                             </button>
                         </div>
                     </div>
@@ -147,7 +145,7 @@
 
                 <div id="draw-input-static" class="container">
                     <div class="radial-container">
-                        <img id="draw-type-icon" src="assets/other_draw.png" alt="Draw Icon" class="draw-large-img">
+                         <img id="draw-type-icon" src="" alt="Draw Icon" class="draw-large-img">
                         <p id="selected-draw-label" class="text-light fs-4 mt-3"></p>
 
                         <div class="form-check form-switch text-light mb-3 d-flex justify-content-center align-items-center">
@@ -156,52 +154,32 @@
                         </div>
 
                         <div id="preset-buttons-container" class="row g-2 mb-3">
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="5">5 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="8">8 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="10">10 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="12">12 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="15">15 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="20">20 <img src="assets/token.png" class="small-icon ms-1" alt="token"></button>
-                            </div>
-                            <div class="col-12">
-                                <button class="btn btn-outline-warning w-100 preset-crest-btn" data-value="0">
-                                    <img src="assets/prize_pool_item.png" class="small-icon me-1" alt="Prize Pool"> Prize Pool Item
-                                </button>
-                            </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="5">5 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="8">8 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="10">10 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="12">12 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="15">15 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-6"> <button class="btn btn-outline-light w-100 preset-crest-btn" data-value="20">20 <img src="" class="small-icon ms-1" alt="token"></button> </div>
+                            <div class="col-12"> <button class="btn btn-outline-warning w-100 preset-crest-btn" data-value="0"> <img src="" class="small-icon me-1" alt="Prize Pool"> Prize Pool Item </button> </div>
                         </div>
 
                         <div id="slider-container" class="d-none">
                             <canvas id="radialSlider" width="260" height="260"></canvas>
-                            <p class="text-light fs-5 mt-3">
-                                <img src="assets/token.png" alt="Token" class="small-icon">
-                                <span id="crestValue">0</span>
-                            </p>
+                            <p class="text-light fs-5 mt-3"> <img src="" alt="Token" class="small-icon"> <span id="crestValue">0</span> </p>
                         </div>
 
                         <div class="mt-4">
-                            <button id="submit-draw" class="btn btn-success btn-lg me-2">Confirm</button>
-                            <button id="cancel-draw" class="btn btn-outline-light btn-lg">Cancel</button>
+                            <button id="submit-draw" class="btn btn-success btn-lg me-2" disabled>Confirm</button> <button id="cancel-draw" class="btn btn-outline-light btn-lg">Cancel</button>
                         </div>
+                    </div>
+                </div>
 
-                    </div> </div> 
-                    <div class="container text-center mb-3">
-                      <button id="toggle-session-mode" class="btn btn-outline-info">
-                          <i class="fa-solid fa-bolt"></i> Start Session Entry
-                      </button>
-                  </div>
-
-                  <div id="session-entries-container" class="container mt-4 d-none">
+                 <div class="container text-center mb-3">
+                    <button id="toggle-session-mode" class="btn btn-outline-info">
+                        <i class="fa-solid fa-bolt"></i> Start Session Entry
+                    </button>
+                </div>
+                <div id="session-entries-container" class="container mt-4 d-none">
                     <div class="session-header d-flex justify-content-between align-items-center mb-2">
                         <h4 class="text-light mb-0">Session Draws</h4>
                         <button id="sync-session-entries" class="btn btn-sm btn-primary">
@@ -209,364 +187,80 @@
                             <span id="session-count-badge" class="badge bg-light text-dark ms-1">0</span>
                         </button>
                     </div>
-                
-                    <div id="session-action-bar" class="d-flex justify-content-between align-items-center p-2 mb-2 bg-info-subtle text-dark rounded d-none">
-                        <div>
-                            <button id="cancel-session-selection" type="button" class="btn-close" aria-label="Close"></button>
-                            <span id="session-select-count" class="ms-2 fw-bold">0 selected</span>
-                        </div>
-                        <div>
-                            <button id="delete-selected-session-items" class="btn btn-outline-danger btn-sm">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
-                            </div>
-                    </div>
                     <div id="session-entries-list" class="list-group session-list-scroll">
-                        </div>
+                         </div>
                 </div>
+            </section>
 
-            </section> <section id="tab-history" class="tab-content d-none">
-                <h3 class="mt-3 text-light">History</h3>
+            <section id="tab-history" class="tab-content d-none">
+                <h3 class="mt-3 text-light"><i class="fa-solid fa-history me-2"></i>History</h3>
                 <div class="container">
                     <ul id="history-list" class="list-group">
                         </ul>
                 </div>
             </section>
 
-            <section id="tab-stats" class="tab-content d-none">
-                <h3 class="mt-3 text-light">Stats</h3>
+             <section id="tab-stats" class="tab-content d-none">
                 <div class="container">
-                    <div class="stats-panel card p-3 mb-3">
-                        <div class="text-center mb-3">
-                            <img id="character-image" src="" alt="Character" class="character-img mb-2">
-                            <h4 id="progress-title">Progress</h4>
-                        </div>
-                        <div id="stats-toggle" class="d-flex justify-content-center mb-3">
-                            <button id="toggle-tokens" class="btn btn-sm btn-outline-light active">Tokens</button>
-                            <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
-                        </div>
-                        <div class="progress mb-3">
-                            <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
-                        </div>
-                        <p id="stats-summary" class="mb-0">
-                            Total: <span id="total-crest">0</span>
-                            <img src="assets/token.png" alt="Token" class="small-icon">
-                        </p>
-                    </div>
-
-                    <canvas id="stats-chart" class="mb-4"></canvas>
-                    <div class="card mb-3 p-2">
-                        <h5 class="text-dark">Free vs Diamond</h5>
-                        <canvas id="stats-pie"></canvas>
-                    </div>
-                    <div class="card mb-3 p-2">
-                        <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
-                        <canvas id="stats-line"></canvas>
-                    </div>
-                    <div class="card mb-3 p-2">
-                        <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
-                        <canvas id="stats-hist"></canvas>
-                    </div>
-                    <div class="card mb-3 p-2">
-                        <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
-                        <canvas id="stats-tier"></canvas>
-                    </div>
-
-                    <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
-                        <h5 class="text-light mb-3">Advanced Metrics</h5>
-                        <div id="advanced-metrics-grid" class="metrics-grid">
-                             </div>
-                    </div>
-                </div>
+                     </div>
             </section>
 
             <section id="tab-compare" class="tab-content d-none">
-                <h3 class="mt-3 text-light">Compare</h3>
-                <div class="container" id="compare-container">
-                     </div>
+                 <div class="container" id="compare-container">
+                      </div>
             </section>
 
             <div id="tab-settings" class="tab-content d-none">
                 <div class="container mt-3">
-                    <h4 class="mb-3 text-light">Settings</h4>
+                    <h4 class="mb-3 text-light"><i class="fa-solid fa-gear me-2"></i>Settings</h4>
+
+                     <div id="event-selector-container" class="mb-3"></div>
+
                     <button id="change-user" class="btn btn-warning mb-2 w-100">Change User</button>
                     <button id="reset-data" class="btn btn-danger mb-2 w-100">Reset Local Data</button>
+
                     <p class="text-light mt-3 d-flex align-items-center flex-column">
                         Currently logged in as:
-                        <img id="settings-current-user-img" src="" alt="Current User" class="ms-2" style="height: 220px; width: 100%;">
+                         <img id="settings-current-user-img" src="" alt="Current User" class="ms-2 mt-2" style="max-height: 200px; max-width: 90%; width: auto; border-radius: 10px;">
                     </p>
                 </div>
             </div>
-
         </div> 
-
         <div id="wrapped-view" class="d-none">
-            <div id="floating-elements">
-                <svg width="0" height="0" style="position:absolute; z-index:-1;">
-                    <defs>
-                        <path id="doodlePath1" d="M -50,50 Q 150,-50 300,100 T 600,150 Q 750,250 900,100 T 1250,50" stroke="none" fill="none"/>
-                        <path id="doodlePath2" d="M 1200,50 C 1000,150 1100,400 800,450 S 500,400 400,250 C 300,100 450,-150 700,-50 S 1000,100 1150,-50" stroke="none" fill="none"/>
-                        <path id="doodlePath3" d="M 50,-50 C 150,0 50,100 200,100 S 350,0 450,50 S 550,200 650,150 S 750,50 850,100 S 950,250 1050,200" stroke="none" fill="none"/>
-                        <path id="doodlePath4" d="M 1250, 500 Q 1000, 200, 700, 350 T 300, 450 Q 100, 550 -50, 400" stroke="none" fill="none"/>
-                        <path id="doodlePath5" d="M 100, -50 C 300, 100, 0, 300, 200, 450 S 500, 600, 700, 500 S 900, 300, 1100, 400" stroke="none" fill="none"/>
-                        <path id="doodlePath6" d="M 1200, 600 C 1000, 500, 1100, 200, 800, 150 S 500, 200, 400, 350 C 300, 500, 450, 800, 700, 700 S 1000, 600, 1150, 750" stroke="none" fill="none"/>
-                        <path id="doodlePath7" d="M -50, 500 Q 200, 400, 400, 450 T 700, 350 T 1000, 400 Q 1250, 450, 1300, 300" stroke="none" fill="none"/>
-                        <path id="doodlePath8" d="M 600, -50 C 500, 100, 700, 150, 600, 300 S 500, 500, 650, 600 S 800, 450, 750, 300 C 700, 150, 550, 100, 600, -50 Z" stroke="none" fill="none"/> <path id="doodlePath9" d="M 100, 600 Q 300, 550, 400, 400 T 600, 200 Q 750, 100, 900, 250 T 1150, 500" stroke="none" fill="none"/>
-                        <path id="doodlePath10" d="M 1100, 100 C 1000, 150, 950, 300, 1050, 400 S 1200, 450, 1150, 300 C 1100, 150, 1250, 100, 1100, 100 Z" stroke="none" fill="none"/> </defs>
-                </svg>
-                <div class="floating-icon token-1"></div>
-                <div class="floating-icon diamond-1"></div>
-                <div class="floating-icon token-2"></div>
-                <div class="floating-icon diamond-2"></div>
-                <div class="floating-icon token-3"></div>
-        
-                <div class="doodle-stroke stroke-1"></div>
-                <div class="doodle-stroke stroke-2"></div>
-                <div class="doodle-stroke stroke-3"></div>
-                <div class="doodle-stroke stroke-4"></div>
-                <div class="doodle-stroke stroke-5"></div>
-                <div class="doodle-stroke stroke-6"></div>
-        
-                <div class="doodle-stroke stroke-7"></div>
-                <div class="doodle-stroke stroke-8"></div>
-                <div class="doodle-stroke stroke-9"></div>
-                <div class="doodle-stroke stroke-10"></div>
-                <div class="doodle-stroke stroke-11"></div>
-                <div class="doodle-stroke stroke-12"></div>
-        
-                <div class="soft-blob blob-1"></div>
-                <div class="soft-blob blob-2"></div>
-                <div class="soft-blob blob-3"></div>
-        
-                <div class="shooting-star star-1"></div>
-                <div class="shooting-star star-2"></div>
-        
-                <div class="sparkle sparkle-1"></div>
-                <div class="sparkle sparkle-2"></div>
-                <div class="sparkle sparkle-3"></div>
-                <div class="sparkle sparkle-4"></div>
-                <div class="sparkle sparkle-5"></div>
-                <div class="sparkle sparkle-6"></div>
-                <div class="sparkle sparkle-7"></div>
-                <div class="sparkle sparkle-8"></div>
-                <div class="sparkle sparkle-9"></div>
-                <div class="sparkle sparkle-10"></div>
-                <div class="sparkle sparkle-11"></div>
-                <div class="sparkle sparkle-12"></div>
-                <div class="sparkle sparkle-13"></div>
-                <div class="sparkle sparkle-14"></div>
-                <div class="sparkle sparkle-15"></div>
-        
-            </div>
-            <div class="wrapped-progress-bar">
-                <div class="progress-inner"></div>
-            </div>
-            <button id="close-wrapped-btn" class="btn btn-close btn-close-white"></button>
-        
-            <div id="wrapped-slides-container">
-        
-                <div class="wrapped-slide active-slide" data-slide-index="0">
-                    <div class="slide-content">
-                        <img src="assets/neobeasts_logo.png" alt="Event Logo" class="wrapped-logo mb-3">
-                        <h2><span id="wrapped-user-name-intro">User</span>'s NeoBeasts Summary!</h2>
-                        <p>Let's dive into the data love story...</p>
-                        <img id="wrapped-user-img" src="" alt="User" class="wrapped-user-icon my-3">
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="1">
-                    <div class="slide-content">
-                        <h3>Total Draws Logged</h3>
-                        <p class="wrapped-big-number" id="wrapped-total-draws">0</p>
-                        <p>You've been busy!</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="2">
-                    <div class="slide-content">
-                        <h3>Total Tokens Earned</h3>
-                        <p class="wrapped-big-number">
-                            <span id="wrapped-total-tokens">0</span>
-                            <img src="assets/token.png" class="wrapped-inline-icon" alt="token">
-                        </p>
-                         <p>Stacking them up!</p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="3">
-                    <div class="slide-content">
-                        <h3>Your Luckiest Single Moment</h3>
-                         <p class="wrapped-big-number">
-                             <span id="wrapped-best-draw-crests">?</span>
-                            <img src="assets/token.png" class="wrapped-inline-icon" alt="token">
-                         </p>
-                        <p>From a <span id="wrapped-best-draw-cost" class="fw-bold">?</span> draw!</p>
-                         <p class="small">(Highest tokens from one draw)</p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="4">
-                    <div class="slide-content">
-                        <h3>Your Most Familiar Friend</h3>
-                         <p class="wrapped-big-number">
-                             <span id="wrapped-freq-token-value">?</span>
-                            <img src="assets/token.png" class="wrapped-inline-icon" alt="token">
-                         </p>
-                         <p>Appeared <span id="wrapped-freq-token-count" class="fw-bold">?</span> times.</p>
-                         <p class="small">(Most common token result)</p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="5">
-                    <div class="slide-content">
-                         <h3>Draw Style Breakdown</h3>
-                         <div class="my-3 row justify-content-center">
-                            <div class="col-md-5">
-                                <p class="fs-4">Free Draws: <span id="wrapped-free-draws" class="fw-bold">0</span></p>
-                                <p class="fs-5 text-white-50">(<span id="wrapped-free-percent">0</span>%)</p>
-                            </div>
-                            <div class="col-md-5">
-                                <p class="fs-4">Diamond Draws: <span id="wrapped-diamond-draws" class="fw-bold">0</span></p>
-                                <p class="fs-5 text-white-50">(<span id="wrapped-diamond-percent">0</span>%)</p>
-                            </div>
-                         </div>
-                         <p class="small">(Count and Percentage of Total Draws)</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="6">
-                     <div class="slide-content">
-                        <h3>Your Go-To Draw</h3>
-                         <div id="wrapped-most-used-draw-icon" class="my-3"></div>
-                        <p class="fs-3 fw-bold" id="wrapped-most-used-draw-text">?</p>
-                        <p>Was your most clicked option!</p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="7">
-                     <div class="slide-content">
-                        <h3>Luck Score™ Analysis</h3>
-                        <p class="fs-1 fw-bold" id="wrapped-luck-status">?</p>
-                        <p>Your average was <span id="wrapped-avg-tokens" class="fw-bold">?</span> tokens per draw.</p>
-                         <p class="small">(Compared to a baseline average)</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="8">
-                    <div class="slide-content">
-                        <h3>Your Draw Personality</h3>
-                         <p class="fs-2 fst-italic my-4" id="wrapped-personality">Calculating...</p>
-                        <p>(Just a bit of fun based on your stats!)</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="9">
-                     <div class="slide-content">
-                        <h3>Peak Draw Time</h3>
-                         <div id="wrapped-peak-time-icon" class="my-3"></div>
-                        <p class="fs-3 fw-bold" id="wrapped-peak-time-name">?</p>
-                        <p id="wrapped-peak-time-desc">Seems you were most active tracking during the [...]!</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="10">
-                    <div class="slide-content">
-                        <h3>Double Digit Power!</h3>
-                         <p class="display-1 fw-bold my-3 text-warning"><span id="wrapped-double-digit-percent">0.0</span>%</p>
-                         <p>of your draws resulted in 10+ tokens!</p>
-                         <p class="small">(Total: <span id="wrapped-double-digit-count">0</span> such draws)</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="11">
-                     <div class="slide-content">
-                         <i class="fa-solid fa-heart-pulse fa-3x text-danger my-3"></i>
-                        <h3>Thinking Alike!</h3>
-                         <p>You & <span id="wrapped-sync-other-name">?</span> drew within 10 mins of each other</p>
-                        <p class="wrapped-big-number" id="wrapped-sync-count">0</p>
-                         <p>times! Were you drawing together? 😉</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="12">
-                     <div class="slide-content">
-                         <i class="fa-solid fa-users fa-3x text-info my-3"></i>
-                         <h3>Teamwork!</h3>
-                         <p>Together, you logged a massive</p>
-                         <p><span id="wrapped-combined-draws" class="fs-1 fw-bold">?</span> Draws</p>
-                         <p>earning a combined total of</p>
-                         <p><span id="wrapped-combined-tokens" class="fs-1 fw-bold">?</span> <img src="assets/token.png" class="wrapped-inline-icon" alt="token"></p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="13">
-                     <div class="slide-content">
-                        <h3>Superlatives!</h3>
-                         <ul class="list-unstyled fs-5 my-3 text-start mx-auto" style="max-width: 350px;">
-                            <li class="mb-2"><i class="fa-solid fa-moon me-2 text-secondary"></i> M.L. To Be a Night Owl: <strong id="wrapped-likely-nightowl">?</strong></li>
-                             <li class="mb-2"><i class="fa-solid fa-hand-holding-dollar me-2 text-success"></i> M.L. To Find a Freebie: <strong id="wrapped-likely-freebie">?</strong></li>
-                             <li class="mb-2"><i class="fa-solid fa-dice-d20 me-2 text-warning"></i> M.L. To Be Lucky: <strong id="wrapped-likely-lucky">?</strong></li>
-                             <li class="mb-2"><i class="fa-solid fa-calendar-check me-2 text-info"></i> M.L. To Get the Daily Deal: <strong id="wrapped-likely-daily">?</strong></li>
-                             <li class="mb-2"><i class="fa-solid fa-star me-2 text-primary"></i> M.L. To Hit the Jackpot (20+): <strong id="wrapped-likely-jackpot">?</strong></li>
-                         </ul>
-                         <p class="small">(M.L. = Most Likely)</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="14">
-                     <div class="slide-content">
-                         <i class="fa-solid fa-flag-checkered fa-3x text-light my-3"></i>
-                        <h3>The Trailblazer Award</h3>
-                         <p>Goes to...</p>
-                        <p class="fs-2 fw-bold" id="wrapped-trailblazer-name">?</p>
-                         <p>for logging the very first draw of the event!</p>
-                    </div>
-                </div>
-        
-                <div class="wrapped-slide" data-slide-index="15">
-                     <div class="slide-content">
-                        <h3>How You Stack Up</h3>
-                         <div class="row justify-content-center my-3 text-center">
-                             <div class="col-5 border-end border-white-50">
-                                 <img id="wrapped-compare-user-img" src="" alt="User" class="summary-user-icon mb-2" />
-                                 <p class="fw-bold fs-5 mb-1" id="wrapped-compare-user-name">You</p>
-                                 <p>Draws: <strong id="wrapped-compare-user-draws">?</strong></p>
-                                 <p>Tokens: <strong id="wrapped-compare-user-tokens">?</strong></p>
-                                 <p>Avg Luck: <strong id="wrapped-compare-user-avg">?</strong></p>
-                             </div>
-                             <div class="col-5">
-                                 <img id="wrapped-compare-other-img" src="" alt="Other User" class="summary-user-icon mb-2" />
-                                 <p class="fw-bold fs-5 mb-1" id="wrapped-compare-other-name">Them</p>
-                                 <p>Draws: <strong id="wrapped-compare-other-draws">?</strong></p>
-                                  <p>Tokens: <strong id="wrapped-compare-other-tokens">?</strong></p>
-                                 <p>Avg Luck: <strong id="wrapped-compare-other-avg">?</strong></p>
-                             </div>
-                         </div>
-                         <p class="small">(Basic comparison)</p>
-                    </div>
-                </div>
-        
-                 <div class="wrapped-slide" data-slide-index="16">
-                     <div class="slide-content">
-                        <img src="assets/neobeasts_logo.png" alt="Event Logo" class="wrapped-logo mb-3" style="opacity: 0.6;">
-                        <h2>That's a Wrap!</h2>
-                        <p>Hope you enjoyed your totally accurate* summary!</p>
-                         <p class="small">*Accuracy not guaranteed, fun hopefully was!</p>
-                        <button id="finish-wrapped-btn" class="btn btn-light mt-4 px-4">Done</button>
-                    </div>
-                </div>
-            </div>
-        
-            <div class="wrapped-navigation">
-                <button id="prev-slide-btn" class="btn btn-link"><i class="fa-solid fa-chevron-left"></i></button>
-                <button id="next-slide-btn" class="btn btn-link"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-        </div>
-    </div> 
-        
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+             <div id="floating-elements">
+                 <svg width="0" height="0" style="position:absolute; z-index:-1;"> <defs> <path id="doodlePath1" d="M -50,50 Q 150,-50 300,100 T 600,150 Q 750,250 900,100 T 1250,50" stroke="none" fill="none"/> <path id="doodlePath2" d="M 1200,50 C 1000,150 1100,400 800,450 S 500,400 400,250 C 300,100 450,-150 700,-50 S 1000,100 1150,-50" stroke="none" fill="none"/> <path id="doodlePath3" d="M 50,-50 C 150,0 50,100 200,100 S 350,0 450,50 S 550,200 650,150 S 750,50 850,100 S 950,250 1050,200" stroke="none" fill="none"/> <path id="doodlePath4" d="M 1250, 500 Q 1000, 200, 700, 350 T 300, 450 Q 100, 550 -50, 400" stroke="none" fill="none"/> <path id="doodlePath5" d="M 100, -50 C 300, 100, 0, 300, 200, 450 S 500, 600, 700, 500 S 900, 300, 1100, 400" stroke="none" fill="none"/> <path id="doodlePath6" d="M 1200, 600 C 1000, 500, 1100, 200, 800, 150 S 500, 200, 400, 350 C 300, 500, 450, 800, 700, 700 S 1000, 600, 1150, 750" stroke="none" fill="none"/> <path id="doodlePath7" d="M -50, 500 Q 200, 400, 400, 450 T 700, 350 T 1000, 400 Q 1250, 450, 1300, 300" stroke="none" fill="none"/> <path id="doodlePath8" d="M 600, -50 C 500, 100, 700, 150, 600, 300 S 500, 500, 650, 600 S 800, 450, 750, 300 C 700, 150, 550, 100, 600, -50 Z" stroke="none" fill="none"/> <path id="doodlePath9" d="M 100, 600 Q 300, 550, 400, 400 T 600, 200 Q 750, 100, 900, 250 T 1150, 500" stroke="none" fill="none"/> <path id="doodlePath10" d="M 1100, 100 C 1000, 150, 950, 300, 1050, 400 S 1200, 450, 1150, 300 C 1100, 150, 1250, 100, 1100, 100 Z" stroke="none" fill="none"/> </defs> </svg>
+                 <div class="floating-icon token-1"></div> <div class="floating-icon diamond-1"></div> <div class="floating-icon token-2"></div> <div class="floating-icon diamond-2"></div> <div class="floating-icon token-3"></div>
+                 <div class="doodle-stroke stroke-1"></div> <div class="doodle-stroke stroke-2"></div> <div class="doodle-stroke stroke-3"></div> <div class="doodle-stroke stroke-4"></div> <div class="doodle-stroke stroke-5"></div> <div class="doodle-stroke stroke-6"></div>
+                 <div class="doodle-stroke stroke-7"></div> <div class="doodle-stroke stroke-8"></div> <div class="doodle-stroke stroke-9"></div> <div class="doodle-stroke stroke-10"></div> <div class="doodle-stroke stroke-11"></div> <div class="doodle-stroke stroke-12"></div>
+                 <div class="soft-blob blob-1"></div> <div class="soft-blob blob-2"></div> <div class="soft-blob blob-3"></div>
+                 <div class="shooting-star star-1"></div> <div class="shooting-star star-2"></div>
+                 <div class="sparkle sparkle-1"></div> <div class="sparkle sparkle-2"></div> <div class="sparkle sparkle-3"></div> <div class="sparkle sparkle-4"></div> <div class="sparkle sparkle-5"></div> <div class="sparkle sparkle-6"></div> <div class="sparkle sparkle-7"></div> <div class="sparkle sparkle-8"></div> <div class="sparkle sparkle-9"></div> <div class="sparkle sparkle-10"></div> <div class="sparkle sparkle-11"></div> <div class="sparkle sparkle-12"></div> <div class="sparkle sparkle-13"></div> <div class="sparkle sparkle-14"></div> <div class="sparkle sparkle-15"></div>
+             </div>
+             <div class="wrapped-progress-bar"> <div class="progress-inner"></div> </div>
+             <button id="close-wrapped-btn" class="btn btn-close btn-close-white"></button>
+             <div id="wrapped-slides-container">
+                 <div class="wrapped-slide active-slide" data-slide-index="0"> <div class="slide-content"> <img src="assets/neobeasts/neobeasts_logo.png" alt="Event Logo" class="wrapped-logo mb-3"> <h2><span id="wrapped-user-name-intro">User</span>'s Summary!</h2> <p>Let's dive into the data...</p> <img id="wrapped-user-img" src="" alt="User" class="wrapped-user-icon my-3"> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="1"> <div class="slide-content"> <h3>Total Draws Logged</h3> <p class="wrapped-big-number" id="wrapped-total-draws">0</p> <p>You've been busy!</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="2"> <div class="slide-content"> <h3>Total Tokens Earned</h3> <p class="wrapped-big-number"> <span id="wrapped-total-tokens">0</span> <img src="assets/neobeasts/token.png" class="wrapped-inline-icon" alt="token"> </p> <p>Stacking them up!</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="3"> <div class="slide-content"> <h3>Your Luckiest Single Moment</h3> <p class="wrapped-big-number"> <span id="wrapped-best-draw-crests">?</span> <img src="assets/neobeasts/token.png" class="wrapped-inline-icon" alt="token"> </p> <p>From a <span id="wrapped-best-draw-cost" class="fw-bold">?</span> draw!</p> <p class="small">(Highest tokens from one draw)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="4"> <div class="slide-content"> <h3>Your Most Familiar Friend</h3> <p class="wrapped-big-number"> <span id="wrapped-freq-token-value">?</span> <img src="assets/neobeasts/token.png" class="wrapped-inline-icon" alt="token"> </p> <p>Appeared <span id="wrapped-freq-token-count" class="fw-bold">?</span> times.</p> <p class="small">(Most common token result)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="5"> <div class="slide-content"> <h3>Draw Style Breakdown</h3> <div class="my-3 row justify-content-center"> <div class="col-md-5"> <p class="fs-4">Free Draws: <span id="wrapped-free-draws" class="fw-bold">0</span></p> <p class="fs-5 text-white-50">(<span id="wrapped-free-percent">0</span>%)</p> </div> <div class="col-md-5"> <p class="fs-4">Diamond Draws: <span id="wrapped-diamond-draws" class="fw-bold">0</span></p> <p class="fs-5 text-white-50">(<span id="wrapped-diamond-percent">0</span>%)</p> </div> </div> <p class="small">(Count and Percentage of Total Draws)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="6"> <div class="slide-content"> <h3>Your Go-To Draw</h3> <div id="wrapped-most-used-draw-icon" class="my-3"></div> <p class="fs-3 fw-bold" id="wrapped-most-used-draw-text">?</p> <p>Was your most clicked option!</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="7"> <div class="slide-content"> <h3>Luck Score™ Analysis</h3> <p class="fs-1 fw-bold" id="wrapped-luck-status">?</p> <p>Your average was <span id="wrapped-avg-tokens" class="fw-bold">?</span> tokens per draw.</p> <p class="small">(Compared to a baseline average)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="8"> <div class="slide-content"> <h3>Your Draw Personality</h3> <p class="fs-2 fst-italic my-4" id="wrapped-personality">Calculating...</p> <p>(Just a bit of fun based on your stats!)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="9"> <div class="slide-content"> <h3>Peak Draw Time</h3> <div id="wrapped-peak-time-icon" class="my-3"></div> <p class="fs-3 fw-bold" id="wrapped-peak-time-name">?</p> <p id="wrapped-peak-time-desc">Seems you were most active tracking during the [...]!</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="10"> <div class="slide-content"> <h3>Double Digit Power!</h3> <p class="display-1 fw-bold my-3 text-warning"><span id="wrapped-double-digit-percent">0.0</span>%</p> <p>of your draws resulted in 10+ tokens!</p> <p class="small">(Total: <span id="wrapped-double-digit-count">0</span> such draws)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="11"> <div class="slide-content"> <i class="fa-solid fa-heart-pulse fa-3x text-danger my-3"></i> <h3>Thinking Alike!</h3> <p>You & <span id="wrapped-sync-other-name">?</span> drew within 10 mins of each other</p> <p class="wrapped-big-number" id="wrapped-sync-count">0</p> <p>times! Were you drawing together? 😉</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="12"> <div class="slide-content"> <i class="fa-solid fa-users fa-3x text-info my-3"></i> <h3>Teamwork!</h3> <p>Together, you logged a massive</p> <p><span id="wrapped-combined-draws" class="fs-1 fw-bold">?</span> Draws</p> <p>earning a combined total of</p> <p><span id="wrapped-combined-tokens" class="fs-1 fw-bold">?</span> <img src="assets/neobeasts/token.png" class="wrapped-inline-icon" alt="token"></p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="13"> <div class="slide-content"> <h3>Superlatives!</h3> <ul class="list-unstyled fs-5 my-3 text-start mx-auto" style="max-width: 350px;"> <li class="mb-2"><i class="fa-solid fa-moon me-2 text-secondary"></i> M.L. To Be a Night Owl: <strong id="wrapped-likely-nightowl">?</strong></li> <li class="mb-2"><i class="fa-solid fa-hand-holding-dollar me-2 text-success"></i> M.L. To Find a Freebie: <strong id="wrapped-likely-freebie">?</strong></li> <li class="mb-2"><i class="fa-solid fa-dice-d20 me-2 text-warning"></i> M.L. To Be Lucky: <strong id="wrapped-likely-lucky">?</strong></li> <li class="mb-2"><i class="fa-solid fa-calendar-check me-2 text-info"></i> M.L. To Get the Daily Deal: <strong id="wrapped-likely-daily">?</strong></li> <li class="mb-2"><i class="fa-solid fa-star me-2 text-primary"></i> M.L. To Hit the Jackpot (20+): <strong id="wrapped-likely-jackpot">?</strong></li> </ul> <p class="small">(M.L. = Most Likely)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="14"> <div class="slide-content"> <i class="fa-solid fa-flag-checkered fa-3x text-light my-3"></i> <h3>The Trailblazer Award</h3> <p>Goes to...</p> <p class="fs-2 fw-bold" id="wrapped-trailblazer-name">?</p> <p>for logging the very first draw of the event!</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="15"> <div class="slide-content"> <h3>How You Stack Up</h3> <div class="row justify-content-center my-3 text-center"> <div class="col-5 border-end border-white-50"> <img id="wrapped-compare-user-img" src="" alt="User" class="summary-user-icon mb-2" /> <p class="fw-bold fs-5 mb-1" id="wrapped-compare-user-name">You</p> <p>Draws: <strong id="wrapped-compare-user-draws">?</strong></p> <p>Tokens: <strong id="wrapped-compare-user-tokens">?</strong></p> <p>Avg Luck: <strong id="wrapped-compare-user-avg">?</strong></p> </div> <div class="col-5"> <img id="wrapped-compare-other-img" src="" alt="Other User" class="summary-user-icon mb-2" /> <p class="fw-bold fs-5 mb-1" id="wrapped-compare-other-name">Them</p> <p>Draws: <strong id="wrapped-compare-other-draws">?</strong></p> <p>Tokens: <strong id="wrapped-compare-other-tokens">?</strong></p> <p>Avg Luck: <strong id="wrapped-compare-other-avg">?</strong></p> </div> </div> <p class="small">(Basic comparison)</p> </div> </div>
+                 <div class="wrapped-slide" data-slide-index="16"> <div class="slide-content"> <img src="assets/neobeasts/neobeasts_logo.png" alt="Event Logo" class="wrapped-logo mb-3" style="opacity: 0.6;"> <h2>That's a Wrap!</h2> <p>Hope you enjoyed your totally accurate* summary!</p> <p class="small">*Accuracy not guaranteed, fun hopefully was!</p> <button id="finish-wrapped-btn" class="btn btn-light mt-4 px-4">Done</button> </div> </div>
+             </div>
+             <div class="wrapped-navigation"> <button id="prev-slide-btn" class="btn btn-link"><i class="fa-solid fa-chevron-left"></i></button> <button id="next-slide-btn" class="btn btn-link"><i class="fa-solid fa-chevron-right"></i></button> </div>
+         </div> </div> <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/app.js"></script>
-</body>
+    </body>
 </html>

@@ -1,18 +1,88 @@
 $(document).ready(function() {
+  // --- START Event Configuration ---
+  const eventConfigs = {
+    "neobeasts": {
+      eventName: "NeoBeasts",
+      logo: "assets/neobeasts/neobeasts_logo.png", // Corrected path
+      backgroundImage: "assets/neobeasts/lylia_fredrinn_selfie.jpg", // Corrected path
+      themeClass: "neobeasts-event",
+      mitkoIcon: "assets/neobeasts/fredrinn.png", // Specific user icon
+      aylinIcon: "assets/neobeasts/lylia.png",    // Specific user icon
+      mysticalDialIcon: "assets/neobeasts/mystical_dial.png", // Specific free draw icon
+      tokenIcon: "assets/neobeasts/token.png",
+      prizePoolItemIcon: "assets/neobeasts/prize_pool_item.png",
+      otherDrawIcon: "assets/neobeasts/other_draw.png",
+      targetTokens: 1200 // Example: Target for Neobeasts
+    },
+    "naruto": {
+      eventName: "Naruto Collab",
+      logo: "assets/naruto/naruto_logo.svg", // Path from your structure
+      backgroundImage: "assets/naruto/background.png", // Path from your structure
+      themeClass: "naruto-event",
+      mitkoIcon: "assets/naruto/suyou.png",     // Specific user icon (Sasuke)
+      aylinIcon: "assets/naruto/kalea.png",     // Specific user icon (Sakura)
+      mysticalDialIcon: "assets/naruto/scroll_of_flame.png", // Specific free draw icon
+      tokenIcon: "assets/naruto/token.png", // Assuming themed token icon exists
+      prizePoolItemIcon: "assets/naruto/prize_pool_item.png", // Assuming themed item icon exists
+      otherDrawIcon: "assets/naruto/other_draw.png", // Assuming themed icon exists
+      targetTokens: 1200 // Example: Different target for Naruto
+    }
+    // Add future events here...
+  };
 
+  const EVENT_STORAGE_KEY = 'drawTrackerCurrentEvent';
+  // Load the last selected event, default to 'neobeasts' if none is stored
+  let currentEventKey = localStorage.getItem(EVENT_STORAGE_KEY) || "neobeasts";
+  // Ensure the loaded key is valid, otherwise default
+  if (!eventConfigs[currentEventKey]) {
+      currentEventKey = "neobeasts";
+      localStorage.setItem(EVENT_STORAGE_KEY, currentEventKey); // Save default if invalid key was stored
+  }
+  let currentConfig = eventConfigs[currentEventKey];
+  // console.log(`Current Event Config Loaded: ${currentConfig.eventName}`);
+  // --- END Event Configuration ---
+
+  // --- START Default/Shared Assets & Helper ---
+  // Define paths for assets potentially shared across events or as fallbacks
+  const SHARED_ASSETS = {
+      diamond: "assets/diamond.png" // Diamond icon seems shared based on structure
+      // Add other truly shared assets here if any
+  };
+
+  // Helper function to get asset path:
+  // 1. Checks event config for specific asset
+  // 2. Checks shared assets
+  // 3. Returns a default/placeholder if not found (optional)
+  function getAsset(assetName) {
+      // assetName should match keys in eventConfigs (e.g., 'logo', 'tokenIcon', 'mitkoIcon')
+      // or keys in SHARED_ASSETS (e.g., 'diamond')
+      if (currentConfig && currentConfig[assetName]) {
+          return currentConfig[assetName];
+      } else if (SHARED_ASSETS[assetName]) {
+          return SHARED_ASSETS[assetName];
+      } else {
+          console.warn(`Asset type '${assetName}' not found in current event config ('${currentEventKey}') or shared assets. Returning placeholder path.`);
+          // Return a default placeholder or handle the error appropriately
+          return "assets/other_draw.png"; // Example placeholder
+      }
+  }
+  // --- END Default/Shared Assets & Helper ---
+
+
+  // The rest of your variables from the previous version...
   let url_tracker = "https://script.google.com/macros/s/AKfycbw5zf6W7KeeYmYcSzc_s96kg6oJVdmak0tnj_Pr0pbCO6CadaAHEFcUL3ZH9Jm-1ZSy/exec";
 
   if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().then(function(permission) {
-          console.log("Notification permission: " + permission);
+          // console.log("Notification permission: " + permission);
       });
   }
 
-  let inTenDrawMode = false;      // Flag for the special 10x input state
-let tenDrawCounter = 0;         // How many of the 10 results have been entered
-let tenDrawDiamondCost = 0;     // Stores 450 or 500 during 10x input
-let tenDrawTimestamp = null;    // Timestamp for the entire 10x batch
-let tenDrawBatchId = null;      // Optional: Shared ID for the 10 entries
+  let inTenDrawMode = false;
+  let tenDrawCounter = 0;
+  let tenDrawDiamondCost = 0;
+  let tenDrawTimestamp = null;
+  let tenDrawBatchId = null;
   window.myChart = null;
   window.myPieChart = null;
   window.myLineChart = null;
@@ -20,18 +90,13 @@ let tenDrawBatchId = null;      // Optional: Shared ID for the 10 entries
   window.myTierChart = null;
 
   let holdTimer = null;
-const HOLD_DURATION = 750; // Milliseconds for long press
-  let localData = {
-      Mitko: [],
-      Aylin: []
-  };
+  const HOLD_DURATION = 750;
+  let localData = { Mitko: [], Aylin: [] };
   let currentUser = localStorage.getItem("currentUser");
   let currentDiamond = null;
   let inSessionMode = false;
-  let sessionEntries = []; // Holds entry objects {diamond, crests, timestamp, User, tempId, synced?}
+  let sessionEntries = [];
   let statsView = "tokens";
-//   const SESSION_MODE_KEY = 'drawTrackerSessionMode';
-//   const SESSION_ENTRIES_KEY = 'drawTrackerSessionEntries';
   let minValue = 0;
   let maxValue = 20;
   let crestValue = minValue;
@@ -42,269 +107,307 @@ const HOLD_DURATION = 750; // Milliseconds for long press
   const radius = 100;
   const lineWidth = 20;
   const LAST_ACTIVE_TAB_KEY = 'drawTrackerLastActiveTab';
+
+  // Initial setup checks (welcome screen or init user)
   if (!currentUser) {
       $("#welcome-screen").removeClass("d-none");
       $("#main-app").addClass("d-none");
   } else {
-      initUser(currentUser);
+      // initUser will be called below, no need to call it here twice
       $("#welcome-screen").addClass("d-none");
-      $("#main-app").removeClass("d-none");
+      // initUser handles showing main-app after data fetch
   }
 
   //===================== USER SELECTION =====================
+  // No changes needed in this section itself
+  $(".choose-user").click(function() {
+      currentUser = $(this).data("user");
+      localStorage.setItem("currentUser", currentUser);
 
-// Inside $(document).ready()
-    $(".choose-user").click(function() {
-        currentUser = $(this).data("user");
-        localStorage.setItem("currentUser", currentUser);
+      $("#welcome-screen").fadeOut(300, function() {
+          $(this).addClass("d-none");
+          initUser(currentUser);
+      });
+  });
 
-        $("#welcome-screen").fadeOut(300, function() {
-            $(this).addClass("d-none");
-            // Call initUser AFTER welcome screen is hidden
-            // initUser will now handle fetching data and deciding the next screen
-            initUser(currentUser);
-        });
-        // DO NOT show main-app here anymore
-    });
-
+  
 //===================== INIT USER =====================
 function initUser(user) {
-    // --- User setup ---
-    currentUser = user; // Ensure currentUser is set correctly at the start
-    $("body")
-        .removeClass("mitko aylin")
-        .addClass(user.toLowerCase());
-    let charImg = (user === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
+    // --- Event Setup (Load config based on stored key) ---
+    currentEventKey = localStorage.getItem(EVENT_STORAGE_KEY) || "neobeasts";
+    if (!eventConfigs[currentEventKey]) { // Validate stored key
+        currentEventKey = "neobeasts";
+        localStorage.setItem(EVENT_STORAGE_KEY, currentEventKey);
+    }
+    currentConfig = eventConfigs[currentEventKey];
+    // console.log(`Initializing for User: ${user}, Event: ${currentConfig.eventName} (${currentEventKey})`);
+
+    // --- Apply Event Theme & User Class ---
+    const allThemeClasses = Object.values(eventConfigs).map(config => config.themeClass).join(' ');
+    $("body").removeClass(allThemeClasses + " mitko aylin");
+    $("body").addClass(currentConfig.themeClass + " " + user.toLowerCase());
+
+    // --- User Visual Setup ---
+    currentUser = user; // Set global currentUser
+    let mitkoIconPath = getAsset('mitkoIcon');
+    let aylinIconPath = getAsset('aylinIcon');
+    let charImg = (user === "Mitko") ? mitkoIconPath : aylinIconPath;
+
     $("#settings-current-user-img").attr("src", charImg);
     $("#navbar-current-user-img").attr("src", charImg);
     if ($("#character-image").length) { $("#character-image").attr("src", charImg); }
 
-    // --- Define User-Specific Keys ---
-    const userSessionModeKey = `drawTrackerSessionMode_${currentUser}`;
-    const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`;
-    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
-    const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
-    const user10xCostKey = `drawTracker10xCost_${currentUser}`;
-    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
-    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
-    const LAST_ACTIVE_TAB_KEY = 'drawTrackerLastActiveTab'; // Make sure this key is defined if not already global
+    // *** ADDED: Set icons for Daily Summary screen ***
+    $("#summary-mitko-icon").attr("src", mitkoIconPath);
+    $("#summary-aylin-icon").attr("src", aylinIconPath);
+    // *** END ADDED ***
 
-    // --- Load and Restore General Session State ---
+    // --- Update Event Specific UI Elements ---
+    $("#event-logo").attr("src", getAsset('logo'));
+    $("#nav-logo").attr("src", getAsset('logo'));
+
+    // --- Define User & Event Specific Storage Keys ---
+    const userSessionModeKey = `drawTrackerSessionMode_${currentUser}_${currentEventKey}`;
+    const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+    const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+    const user10xCostKey = `drawTracker10xCost_${currentUser}_${currentEventKey}`;
+    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}_${currentEventKey}`;
+    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}_${currentEventKey}`;
+
+    // --- Load and Restore Session State ---
     try {
         const savedSessionMode = localStorage.getItem(userSessionModeKey) === 'true';
         const savedSessionEntries = JSON.parse(localStorage.getItem(userSessionEntriesKey) || '[]');
         if (savedSessionMode && Array.isArray(savedSessionEntries)) {
-            console.log(`Restoring previous session state for ${currentUser}...`);
+            // console.log(`Restoring previous session state for ${currentUser} (${currentEventKey})...`);
             inSessionMode = true;
             sessionEntries = savedSessionEntries;
             $("#toggle-session-mode").addClass('active').html('<i class="fa-solid fa-circle-stop"></i> End Session Entry');
             $("#session-entries-container").removeClass("d-none");
             renderSessionList();
         } else {
-            console.log(`No active session found for ${currentUser}.`);
+            // console.log(`No active session found for ${currentUser} (${currentEventKey}).`);
             inSessionMode = false; sessionEntries = [];
-            localStorage.removeItem(userSessionModeKey); localStorage.removeItem(userSessionEntriesKey);
+            localStorage.removeItem(userSessionModeKey);
+            localStorage.removeItem(userSessionEntriesKey);
             $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
-            $("#session-entries-container").addClass("d-none"); renderSessionList();
+            $("#session-entries-container").addClass("d-none");
+            renderSessionList();
         }
     } catch (e) {
-        console.error(`Error loading session state for ${currentUser} from localStorage:`, e);
+        console.error(`Error loading session state for ${currentUser} (${currentEventKey}) from localStorage:`, e);
         inSessionMode = false; sessionEntries = [];
         localStorage.removeItem(userSessionModeKey); localStorage.removeItem(userSessionEntriesKey);
         $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
-        $("#session-entries-container").addClass("d-none"); renderSessionList();
+        $("#session-entries-container").addClass("d-none");
+        renderSessionList();
     }
 
-    // --- Load and Restore 10x Draw State (if active) ---
+    // --- Load and Restore 10x Draw State ---
     try {
         if (localStorage.getItem(user10xActiveKey) === 'true') {
-            console.log(`Restoring active 10x draw state for ${currentUser}...`);
+            // console.log(`Restoring active 10x draw state for ${currentUser} (${currentEventKey})...`);
             inTenDrawMode = true;
             tenDrawCounter = parseInt(localStorage.getItem(user10xCounterKey) || '0');
             tenDrawDiamondCost = parseInt(localStorage.getItem(user10xCostKey) || '0');
             tenDrawTimestamp = parseInt(localStorage.getItem(user10xTimestampKey) || Date.now());
             tenDrawBatchId = localStorage.getItem(user10xBatchIdKey) || `10x-${tenDrawTimestamp}`;
 
-            // Update UI to reflect restored 10x state
             $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
-            $("#draw-type-icon").attr("src", "assets/diamond.png");
+            $("#draw-type-icon").attr("src", getAsset('diamond'));
             $('.draw-option').removeClass('active');
             $(`.draw-option[data-diamond="${tenDrawDiamondCost}"]`).addClass('active');
             $("#preset-buttons-container").removeClass("d-none");
             $("#slider-container").addClass("d-none");
-             // Ensure Extended Mode switch is NOT disabled on restore
             $("#extendedMode").prop("checked", false);
-            $("#submit-draw").prop("disabled", true); // Submit initially disabled
+            $("#submit-draw").prop("disabled", true);
 
         } else {
             inTenDrawMode = false; tenDrawCounter = 0; tenDrawDiamondCost = 0;
             tenDrawTimestamp = null; tenDrawBatchId = null;
+             localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
+             localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
+             localStorage.removeItem(user10xBatchIdKey);
         }
     } catch(e) {
-        console.error(`Error loading 10x state for ${currentUser} from localStorage:`, e);
-        inTenDrawMode = false; // Reset on error
+        console.error(`Error loading 10x state for ${currentUser} (${currentEventKey}) from localStorage:`, e);
+        inTenDrawMode = false;
         localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
         localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
         localStorage.removeItem(user10xBatchIdKey);
     }
 
-    // --- DETERMINE AND SET INITIAL ACTIVE TAB ---
+    // --- Set Initial Active Tab ---
     let initialTabId = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
     const validTabIds = ['home', 'history', 'stats', 'compare', 'settings'];
     const defaultTabId = 'home';
     if (!initialTabId || !validTabIds.includes(initialTabId)) {
         initialTabId = defaultTabId;
+        localStorage.setItem(LAST_ACTIVE_TAB_KEY, initialTabId);
     }
-    console.log(`Restoring last active tab: ${initialTabId}`);
+    // console.log(`Restoring last active tab: ${initialTabId}`);
     $(".tab-content").addClass("d-none");
-    $("#tab-" + initialTabId).removeClass("d-none"); // Show the correct tab content
+    $("#tab-" + initialTabId).removeClass("d-none");
     $("#sidebar .nav-link").removeClass('active');
-    $(`#sidebar .nav-link[data-tab='${initialTabId}']`).addClass('active'); // Highlight the correct sidebar link
+    $(`#sidebar .nav-link[data-tab='${initialTabId}']`).addClass('active');
 
     // --- Reset draw input state ONLY IF NOT in restored 10x mode ---
-     // Also find minValue definition, assuming it's 0 globally or defined earlier
-     // Let's assume minValue = 0 for this context
-     const minValue = 0; // Add this if minValue is not defined globally
     if (!inTenDrawMode) {
-         console.log("Resetting draw input area (not in 10x mode)");
-         // Ensure ctx is defined (radial slider context)
+         // console.log("Resetting draw input area (not in 10x mode)");
          const radialCanvas = document.getElementById("radialSlider");
          let ctx = radialCanvas ? radialCanvas.getContext("2d") : null;
-         if (ctx) { drawRing(minValue); } // Assuming drawRing function exists
-         maxValue = 20; crestValue = minValue; // Assuming maxValue/crestValue are global or defined earlier
+         maxValue = 20; crestValue = minValue;
          $("#crestValue").text(crestValue);
+         if (ctx) { drawRing(minValue); }
          $("#extendedMode").prop("disabled", false).prop("checked", false);
-         // Check if trigger('change') is necessary, might depend on your change handler
-         // $("#extendedMode").trigger('change'); // If needed to update UI based on check state
          $("#slider-container").addClass("d-none");
          $("#preset-buttons-container").removeClass("d-none");
          $(".preset-crest-btn").removeClass('active');
-         currentDiamond = null; // Assuming currentDiamond is global or defined earlier
+         currentDiamond = null;
          $(".draw-option").removeClass('active');
          $("#selected-draw-label").text("");
-         $("#draw-type-icon").attr("src", "assets/other_draw.png");
-         $("#submit-draw").prop("disabled", false); // Enable submit for normal mode
+         $("#draw-type-icon").attr("src", getAsset('otherDrawIcon'));
+         $("#submit-draw").prop("disabled", true);
     }
-
+     // --- Initialize components that need asset paths on load ---
+     $('#draw-options .draw-option[data-diamond="0"] img').attr('src', getAsset('mysticalDialIcon'));
+     $('#draw-options .draw-option[data-diamond="25"] img').attr('src', getAsset('diamond'));
+     $('#draw-options .draw-option[data-diamond="50"] img').attr('src', getAsset('diamond'));
+     $('#draw-options .draw-option[data-diamond="450"] img').attr('src', getAsset('diamond'));
+     $('#draw-options .draw-option[data-diamond="500"] img').attr('src', getAsset('diamond'));
+     $('#preset-buttons-container img.small-icon[alt="token"]').attr('src', getAsset('tokenIcon'));
+     $('#preset-buttons-container img.small-icon[alt="Prize Pool"]').attr('src', getAsset('prizePoolItemIcon'));
+     $('#slider-container img.small-icon[alt="Token"]').attr('src', getAsset('tokenIcon'));
 
     // --- Fetch remote data THEN decide which screen to show ---
     fetchRemoteData(() => {
-        // This code runs AFTER data is fetched and localData is populated
-
         const todayStr = getTodayDateString();
         const hideUntilDate = localStorage.getItem('hideDailySummaryUntil');
 
-        // Check if the summary should be skipped for today
         if (hideUntilDate === todayStr) {
-            console.log("Daily summary hidden for today.");
-            // Hide loader if it's still visible
+            // console.log("Daily summary hidden for today.");
             $("#loader").addClass("d-none");
-            $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app directly
+            $("#main-app").hide().removeClass("d-none").fadeIn(300);
         } else {
-            // Calculate today's draws AND discount info using the CORRECT function
             const todaysInfo = calculateTodaysDrawsAndDiscount(localData);
 
-            // Update TOTAL counts
             $("#mitko-today-count").text(todaysInfo.mitkoTotal);
             $("#aylin-today-count").text(todaysInfo.aylinTotal);
 
-            // Update Mitko's DAILY DISCOUNT info
             const mitkoDiscountEl = $("#mitko-daily-discount");
             if (todaysInfo.mitkoDiscountCrests !== null) {
-                mitkoDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.mitkoDiscountCrests}</span> <img src="assets/token.png" class="small-icon" alt="token">`);
-                mitkoDiscountEl.removeClass('text-muted').addClass('text-dark'); // Make text darker if done
+                mitkoDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.mitkoDiscountCrests}</span> <img src="${getAsset('tokenIcon')}" class="small-icon" alt="token">`);
+                mitkoDiscountEl.removeClass('text-muted').addClass('text-dark');
             } else {
                 mitkoDiscountEl.html('Daily 25💎: <span class="fw-normal">Not done</span>');
-                mitkoDiscountEl.removeClass('text-dark').addClass('text-muted'); // Keep muted if not done
+                mitkoDiscountEl.removeClass('text-dark').addClass('text-muted');
             }
 
-            // Update Aylin's DAILY DISCOUNT info
             const aylinDiscountEl = $("#aylin-daily-discount");
             if (todaysInfo.aylinDiscountCrests !== null) {
-                 aylinDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.aylinDiscountCrests}</span> <img src="assets/token.png" class="small-icon" alt="token">`);
+                 aylinDiscountEl.html(`Daily 25💎: <span class="fw-bold">${todaysInfo.aylinDiscountCrests}</span> <img src="${getAsset('tokenIcon')}" class="small-icon" alt="token">`);
                  aylinDiscountEl.removeClass('text-muted').addClass('text-dark');
             } else {
                  aylinDiscountEl.html('Daily 25💎: <span class="fw-normal">Not done</span>');
                  aylinDiscountEl.removeClass('text-dark').addClass('text-muted');
             }
 
-            // Hide loader before showing summary
             $("#loader").addClass("d-none");
-             // Show the summary screen (fade it in)
-            console.log("Showing daily summary screen.");
+            // console.log("Showing daily summary screen.");
             $("#daily-summary-screen").hide().removeClass("d-none").fadeIn(300);
-
-            // IMPORTANT: Do NOT show the main-app yet.
         }
 
-        // Update the data for the hidden tabs (History, Stats, Compare)
-        // These functions should be safe to call now that localData is populated
+        // Update the data for the hidden tabs
         updateHistory();
         updateStats();
         updateCompare();
+        // Re-set preset icons just in case
+        $('#preset-buttons-container img.small-icon[alt="token"]').attr('src', getAsset('tokenIcon'));
+        $('#preset-buttons-container img.small-icon[alt="Prize Pool"]').attr('src', getAsset('prizePoolItemIcon'));
 
     }); // End of fetchRemoteData callback
-}
+} // End initUser function
+  
 
   //===================== FETCH REMOTE DATA =====================
-
   function fetchRemoteData(callback) {
     $("#loader").removeClass("d-none");
 
+    // The backend doGet now fetches all data, including the Event column
+    let fetchUrl = url_tracker;
+
     $.ajax({
-        url: url_tracker,
+        url: fetchUrl,
         method: "GET",
         dataType: "jsonp",
-        jsonpCallback: "callback", // Ensure this matches default/Apps Script doGet
-        timeout: 15000,
+        // jsonpCallback: "callback", // Use default generated by jQuery unless specific required
+        timeout: 15000, // 15 seconds
         success: function(data) {
+            // Reset local data completely before populating
             localData = { Mitko: [], Aylin: [] };
             let parseErrors = 0;
+            // console.log(`Fetched ${data?.length || 0} total entries from sheet.`);
 
+            // No client-side filtering needed here anymore IF doGet fetches all.
+            // We'll filter within updateHistory/Stats/Compare if needed.
             (data || []).forEach(entry => {
-                // Basic validation of essential fields
-                if (entry && entry.User && localData[entry.User] !== undefined && entry.Timestamp) {
-                     // Use original timestamp if present, otherwise try parsing again
-                    let timestampMs = Date.parse(entry.Timestamp); // Try parsing standard format
+                // Basic validation
+                if (entry && entry.User && localData[entry.User] !== undefined && entry.Timestamp && entry.Entry_Id) { // Ensure essential fields exist
+                    let timestampMs = Date.parse(entry.Timestamp);
                     if (isNaN(timestampMs)) {
-                         // If parsing fails, maybe it's already a ms timestamp? (Less likely from Sheets)
-                         timestampMs = Number(entry.Timestamp); // Try converting directly
-                         if (isNaN(timestampMs)) {
-                              console.warn("Invalid timestamp format for entry:", entry);
+                         timestampMs = Number(entry.Timestamp); // Try direct number conversion
+                         if (isNaN(timestampMs) || !isFinite(timestampMs)) { // Check if still invalid
+                              console.warn(`Invalid timestamp format for entry ID ${entry.Entry_Id}:`, entry.Timestamp);
                               parseErrors++;
                               return; // Skip entry if timestamp is unusable
                          }
                     }
 
                      const parsed = {
-                         id: entry.Entry_Id ? Number(String(entry.Entry_Id).trim()) : null,
-                         diamond: parseInt(entry.Diamonds) || 0, // Default to 0 if NaN
-                         crests: parseInt(entry.Crests) || 0,    // Default to 0 if NaN
-                         date: entry.Date, // Keep original Date if present
+                         id: entry.Entry_Id, // Use ID directly from sheet
+                         diamond: parseInt(entry.Diamonds) || 0,
+                         crests: parseInt(entry.Crests) || 0,
+                         // date: entry.Date, // We use timestamp primarily
                          timestamp: timestampMs,
                          user: entry.User,
-                         batchId: entry.Batch_Id || entry.batchId || null // Check common variations, default null
+                         batchId: entry.Batch_Id || entry.batchId || null, // Check common variations
+                         // Get Event field, default to neobeasts if missing/null/empty
+                         event: entry.Event || "neobeasts"
                      };
 
                     localData[entry.User].push(parsed);
                 } else {
+                    // Log reasons for skipping
                     if (!entry || !entry.User) console.warn("Skipping entry with missing User:", entry);
                     else if (localData[entry.User] === undefined) console.warn("Skipping entry for unknown user:", entry);
                     else if (!entry.Timestamp) console.warn("Skipping entry with missing Timestamp:", entry);
+                    else if (!entry.Entry_Id) console.warn("Skipping entry with missing Entry_Id:", entry);
                      parseErrors++;
                 }
             });
 
+            // Sort data after parsing
             localData.Mitko.sort((a, b) => b.timestamp - a.timestamp);
             localData.Aylin.sort((a, b) => b.timestamp - a.timestamp);
 
-            if (parseErrors > 0) { console.warn(`Data parsing errors: ${parseErrors}`); }
+            // console.log(`Parsed data - Mitko: ${localData.Mitko.length}, Aylin: ${localData.Aylin.length}`);
+            if (parseErrors > 0) { console.warn(`Data parsing errors encountered: ${parseErrors}`); }
+
             $("#loader").addClass("d-none");
-            if (callback) { callback(); }
+            if (callback) { callback(); } // Execute callback (usually to update UI)
         },
-        error: function(jqXHR, textStatus, errorThrown) { /* ... error handling ... */ }
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.error("Fetch Error:", textStatus, errorThrown);
+            alert("Error fetching data from the server. Please check connection/script URL.");
+            $("#loader").addClass("d-none");
+            // Optionally execute callback even on error if UI should update with empty/stale data
+            // if (callback) { callback(); }
+        }
     });
-}
+} // End fetchRemoteData
+
+
 
   //===================== SIDEBAR / OVERLAY =====================
 
@@ -351,26 +454,102 @@ function initUser(user) {
       }
   });
 
-  //===================== SETTINGS =====================
-
   $("#change-user").click(function() {
-      localStorage.removeItem("currentUser");
-      location.reload();
-  });
+    // Consider clearing the selected event when changing user? Optional.
+    // localStorage.removeItem(EVENT_STORAGE_KEY);
+    localStorage.removeItem("currentUser");
+    location.reload(); // Reload to go back to user selection
+});
 
-  $("#reset-data").click(function() {
-      if (confirm(`Reset local data for ${currentUser}? (Google Sheet unaffected)`)) {
-          if (currentUser && localData[currentUser]) {
-              localData[currentUser] = [];
-              updateHistory();
-              updateStats();
-              updateCompare();
-              alert(`Local data for ${currentUser} reset!`);
-          } else {
-              alert("No user selected or data empty.");
-          }
+$("#reset-data").click(function() {
+    // Confirmation message now includes the event name correctly via currentConfig
+    if (confirm(`Reset LOCAL data for ${currentUser} for the ${currentConfig.eventName} event? (Google Sheet unaffected)`)) {
+        if (currentUser && localData[currentUser]) {
+            // Filter local data to only keep entries NOT matching current event for the user
+            localData[currentUser] = localData[currentUser].filter(entry => entry.event !== currentEventKey);
+
+            // Clear user-specific session and 10x state for the *current* event
+            const userSessionModeKey = `drawTrackerSessionMode_${currentUser}_${currentEventKey}`;
+            const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+            const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+            const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+            const user10xCostKey = `drawTracker10xCost_${currentUser}_${currentEventKey}`;
+            const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}_${currentEventKey}`;
+            const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}_${currentEventKey}`;
+            localStorage.removeItem(userSessionModeKey);
+            localStorage.removeItem(userSessionEntriesKey);
+            localStorage.removeItem(user10xActiveKey);
+            localStorage.removeItem(user10xCounterKey);
+            localStorage.removeItem(user10xCostKey);
+            localStorage.removeItem(user10xTimestampKey);
+            localStorage.removeItem(user10xBatchIdKey);
+
+            // Reset runtime state related to the current event's session/10x
+            inSessionMode = false; sessionEntries = [];
+            inTenDrawMode = false; tenDrawCounter = 0; tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
+
+            // Update UI to reflect cleared data for the current event
+            updateHistory(); // Will show only non-current event entries now
+            updateStats();   // Will show stats based on remaining entries
+            updateCompare(); // Will show comparison based on remaining entries
+            renderSessionList(); // Will show empty session list
+             $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
+             $("#session-entries-container").addClass("d-none");
+
+            alert(`Local data and session state for ${currentUser} (${currentConfig.eventName}) reset!`);
+        } else {
+            alert("No user selected or data empty.");
+        }
+    }
+});
+
+// Placeholder function for adding Event Selector (to be called later)
+function setupEventSelector() {
+      const selectorContainer = $('#event-selector-container'); // Assuming a div with this ID in Settings tab HTML
+      if (!selectorContainer.length) {
+           console.warn("Event selector container not found in Settings tab.");
+           return; // Don't proceed if the container doesn't exist
       }
-  });
+
+      // Create selector only if it doesn't exist
+      if ($('#event-selector').length === 0) {
+           selectorContainer.empty(); // Clear container first
+           selectorContainer.append('<h5 class="text-light mt-4 mb-2">Select Event</h5>');
+           const selector = $('<select id="event-selector" class="form-select"></select>');
+           selectorContainer.append(selector);
+
+           // Populate
+           for (const key in eventConfigs) {
+             selector.append(`<option value="${key}" ${key === currentEventKey ? 'selected' : ''}>${eventConfigs[key].eventName}</option>`);
+           }
+
+          // Attach listener
+           selector.on('change', function() {
+               const newEventKey = $(this).val();
+               if (newEventKey !== currentEventKey) {
+                    if (sessionEntries.length > 0 && inSessionMode) {
+                         if (!confirm(`You have unsynced session entries for ${currentConfig.eventName}. Switching events will clear these unsynced entries. Continue?`)) {
+                              // User cancelled, revert selector visually
+                              $(this).val(currentEventKey);
+                              return;
+                          }
+                          // Clear session state if user proceeds
+                          const userSessionModeKey = `drawTrackerSessionMode_${currentUser}_${currentEventKey}`;
+                          const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+                          localStorage.removeItem(userSessionModeKey);
+                          localStorage.removeItem(userSessionEntriesKey);
+                          inSessionMode = false; sessionEntries = [];
+                    }
+                   localStorage.setItem(EVENT_STORAGE_KEY, newEventKey);
+                   alert(`Switched to ${eventConfigs[newEventKey].eventName} event. Reloading app...`);
+                   location.reload();
+               }
+           });
+      } else {
+          // Selector already exists, just ensure the correct option is selected (though reload usually handles this)
+          $('#event-selector').val(currentEventKey);
+      }
+}
 
   //===================== STATS TOGGLE =====================
 
@@ -395,37 +574,75 @@ function initUser(user) {
 
 //===================== DRAW OPTION =====================
 $(".draw-option").click(function() {
+
+    // --- Check if currently in 10x mode ---
     if (inTenDrawMode) {
-        alert("Please finish entering the 10 results for the current draw or cancel.");
+        // Ask user if they want to cancel the ongoing 10x entry
+        if (confirm("You are in the middle of a 10x draw entry. Cancel the current 10x draw?")) {
+            // User confirmed cancellation
+            console.log("User cancelled ongoing 10x draw via draw option click.");
+            resetInputFieldsFully(); // This clears 10x state and resets UI
+        }
+        // Whether they confirmed or cancelled the prompt, stop further processing of this click
         return;
     }
-    // Define user-specific keys
-    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
-    const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
-    const user10xCostKey = `drawTracker10xCost_${currentUser}`;
-    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
-    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
+    // --- End 10x mode check ---
 
+    // If not in 10x mode, proceed with selecting the new draw type:
+
+    // Define user/event specific keys for 10x mode (only needed if starting a 10x)
+    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+    const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+    const user10xCostKey = `drawTracker10xCost_${currentUser}_${currentEventKey}`;
+    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}_${currentEventKey}`;
+    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}_${currentEventKey}`;
+
+    // --- Reset Input State ---
     $(".draw-option").removeClass('active');
     $(".preset-crest-btn").removeClass('active');
     crestValue = minValue; $("#crestValue").text(crestValue);
-    $("#extendedMode").prop("checked", false).trigger('change');
-    $("#submit-draw").prop("disabled", true); 
+    if ($("#extendedMode").is(":checked")) {
+      $("#extendedMode").prop("checked", false).trigger('change');
+    }
+    $("#submit-draw").prop("disabled", true); // Submit always disabled until crest selected
 
+    // --- Process Selected Draw Type ---
     const diamond = parseInt($(this).data("diamond"));
     const isTenDraw = diamond === 450 || diamond === 500;
-    $(this).addClass('active');
+    $(this).addClass('active'); // Highlight button
 
     if (isTenDraw) {
         // === ENTERING 10x DRAW MODE ===
-        inTenDrawMode = true;
+        console.log("10x Draw selected.");
+        inTenDrawMode = true; // Set 10x flag
         tenDrawCounter = 0;
         tenDrawDiamondCost = diamond;
         tenDrawTimestamp = Date.now();
         tenDrawBatchId = `10x-${tenDrawTimestamp}`;
         currentDiamond = diamond;
 
-        // --- Save 10x state to localStorage ---
+        // --- Auto-start Session Mode if not already active ---
+        if (!inSessionMode) {
+              console.log("Not in session mode, auto-starting for 10x draw.");
+              inSessionMode = true; // Set flag
+              const userSessionModeKey = `drawTrackerSessionMode_${currentUser}_${currentEventKey}`;
+              const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+              localStorage.setItem(userSessionModeKey, 'true'); // Save state
+              $("#toggle-session-mode").addClass('active').html('<i class="fa-solid fa-circle-stop"></i> End Session Entry');
+              $("#session-entries-container").removeClass("d-none");
+               try {
+                  const storedEntries = JSON.parse(localStorage.getItem(userSessionEntriesKey) || '[]');
+                  sessionEntries = Array.isArray(storedEntries) ? storedEntries : [];
+               } catch (e) {
+                   console.error("Error reading session entries on auto-start:", e);
+                   sessionEntries = [];
+               }
+               renderSessionList();
+               document.getElementById('session-entries-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        // --- End Auto-start Session Mode ---
+
+        // Save 10x state to localStorage
         try {
             localStorage.setItem(user10xActiveKey, 'true');
             localStorage.setItem(user10xCounterKey, tenDrawCounter);
@@ -436,32 +653,33 @@ $(".draw-option").click(function() {
              console.error("Error saving 10x state to localStorage:", e);
              alert("Warning: Could not save 10x state.");
         }
-        // ------------------------------------
 
-        // Update UI
+        // Update input area UI for 10x mode
         $("#selected-draw-label").text(`Enter Result 1 / 10 for ${diamond}💎 Draw`);
-        $("#draw-type-icon").attr("src", "assets/diamond.png");
+        $("#draw-type-icon").attr("src", getAsset('diamond'));
         $("#preset-buttons-container").removeClass("d-none");
         $("#slider-container").addClass("d-none");
-        $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
+        $("#extendedMode").prop("disabled", false);
         $("#submit-draw").prop("disabled", true);
 
     } else {
         // === NORMAL DRAW TYPE SELECTED ===
-        inTenDrawMode = false; // Ensure flag is false
+        inTenDrawMode = false;
         currentDiamond = diamond;
-        const label = (diamond === 0) ? "Free Draw" : diamond + " Diamonds";
+        const label = (diamond === 0) ? "Free Draw" : `${diamond} Diamonds`;
         $("#selected-draw-label").text(label);
-        $("#draw-type-icon").attr("src", diamond === 0 ? "assets/mystical_dial.png" : "assets/diamond.png");
+        $("#draw-type-icon").attr("src", diamond === 0 ? getAsset('mysticalDialIcon') : getAsset('diamond'));
         $("#extendedMode").prop("disabled", false);
-        $("#submit-draw").prop("disabled", false);
-        // --- Clear any stray 10x state from storage ---
-        localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
-        localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
+        $("#submit-draw").prop("disabled", true);
+
+        // Clear any stray 10x state from storage
+        localStorage.removeItem(user10xActiveKey);
+        localStorage.removeItem(user10xCounterKey);
+        localStorage.removeItem(user10xCostKey);
+        localStorage.removeItem(user10xTimestampKey);
         localStorage.removeItem(user10xBatchIdKey);
-        // ---------------------------------------------
     }
-});
+}); // End ".draw-option".click
 
 //===================== SESSION MODE TOGGLE =====================
 $("#toggle-session-mode").click(function() {
@@ -551,73 +769,104 @@ $("#extendedMode").change(function() {
     }
 });
 
-//===================== PRESET CREST BUTTONS =====================
-$(document).on("click", ".preset-crest-btn", function() {
-    const selectedCrestValue = parseInt($(this).data("value"));
-    // Define user-specific keys (needed for both saving counter and clearing state)
-    const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`;
-    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
-    const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
-    const user10xCostKey = `drawTracker10xCost_${currentUser}`;
-    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
-    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
+//===================== PRESET CREST BUTTONS / SLIDER INTERACTION =====================
 
-    if (inTenDrawMode) {
-        // === PROCESSING CLICK IN 10x MODE ===
-        tenDrawCounter++;
-        crestValue = selectedCrestValue;
+  // Helper function to update crest value, UI elements, and enable submit
+  function setCrestValue(value) {
+    crestValue = value;
+    $("#crestValue").text(crestValue); // Update text display (for slider)
 
-        let entry = {
-            tempId: `session-${tenDrawTimestamp}-${tenDrawCounter}`,
-            diamond: tenDrawDiamondCost, crests: crestValue,
-            timestamp: tenDrawTimestamp, batchId: tenDrawBatchId,
-            User: currentUser, synced: false
-        };
-        console.log(`Adding 10x result ${tenDrawCounter}/10 (Entry Object):`, entry);
+    // Activate the corresponding preset button if value matches one
+    $(".preset-crest-btn").removeClass('active'); // Deactivate all first
+    $(`.preset-crest-btn[data-value="${value}"]`).addClass('active'); // Activate matching one
 
-        sessionEntries.push(entry);
-        try { // Save session entries list
-            localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
-        } catch (e) { /* Handle error */ }
-
-        renderSessionList();
-
-        // Update the status label AND 10x counter in storage
-        if (tenDrawCounter < 10) {
-            $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
-            // --- Update counter in localStorage ---
-            try { localStorage.setItem(user10xCounterKey, tenDrawCounter); } catch(e) {}
-            // ----------------------------------
-            $(this).addClass('active-flash');
-            setTimeout(() => $(this).removeClass('active-flash'), 200);
-        } else {
-            // === FINISHED 10x DRAW ===
-            alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
-            inTenDrawMode = false; // Reset flag *first*
-            tenDrawCounter = 0;   // Reset counter *after* using it for last tempId
-
-            // --- Clear 10x state from localStorage ---
-            localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
-            localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
-            localStorage.removeItem(user10xBatchIdKey);
-            // -----------------------------------------
-
-            // Reset UI
-            $(".draw-option").removeClass('active'); $(".preset-crest-btn").removeClass('active');
-            currentDiamond = null; crestValue = minValue;
-            $("#crestValue").text(crestValue); $("#selected-draw-label").text("");
-            $("#draw-type-icon").attr("src", "assets/other_draw.png");
-            $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
-            $("#submit-draw").prop("disabled", false);
-            // Clear 10x state vars from memory
-            tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
-        }
-    } else { /* ... Normal mode click logic ... */
-        if (currentDiamond === null) { alert("Please select a draw type first."); return; }
-        $(".preset-crest-btn").removeClass('active'); $(this).addClass('active');
-        crestValue = selectedCrestValue; $("#crestValue").text(crestValue);
+    // Draw ring if slider is currently visible
+    if ($("#extendedMode").is(":checked") && ctx) {
+        drawRing(crestValue);
     }
+
+    // Enable submit button only if a draw type is also selected
+    if (currentDiamond !== null || inTenDrawMode) {
+       $("#submit-draw").prop("disabled", false);
+    } else {
+       $("#submit-draw").prop("disabled", true); // Keep disabled if no draw type selected
+    }
+}
+
+// --- Click on preset buttons ---
+$(document).on("click", ".preset-crest-btn", function() {
+    // Don't allow click if no draw type selected (unless in 10x mode)
+    if (currentDiamond === null && !inTenDrawMode) {
+        alert("Please select a draw type first.");
+        return;
+    }
+
+    const selectedValue = parseInt($(this).data("value"));
+    setCrestValue(selectedValue); // Update value, UI, and enable submit
+
+    // --- Handle 10x draw logic (if applicable) ---
+    if (inTenDrawMode) {
+        // This click counts as one entry submission for the 10x batch
+         const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+         const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+         const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+         const user10xCostKey = `drawTracker10xCost_${currentUser}_${currentEventKey}`;
+         const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}_${currentEventKey}`;
+         const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}_${currentEventKey}`;
+
+         tenDrawCounter++;
+         // crestValue is already set by setCrestValue
+
+         // *** ADD event: currentEventKey to the entry object ***
+         let entry = {
+             tempId: `session-${tenDrawTimestamp}-${tenDrawCounter}`,
+             diamond: tenDrawDiamondCost, crests: crestValue,
+             timestamp: tenDrawTimestamp, batchId: tenDrawBatchId,
+             User: currentUser, synced: false,
+             event: currentEventKey // <--- Added Event Key Here
+         };
+         // console.log(`Adding 10x result ${tenDrawCounter}/10 (Preset Click) (Entry Object):`, entry);
+
+         sessionEntries.push(entry);
+         try { // Save updated session list
+             localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
+         } catch (e) { console.error("Error saving session entry to localStorage:", e); }
+
+         renderSessionList(); // Update the session list display
+
+         // Update the status label & 10x counter in storage if not finished
+         if (tenDrawCounter < 10) {
+             $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
+             try { localStorage.setItem(user10xCounterKey, tenDrawCounter); } catch(e) {}
+
+             // Briefly flash the clicked button
+             $(this).addClass('active-flash');
+             setTimeout(() => $(this).removeClass('active-flash'), 200);
+
+             // Disable submit again, waiting for next preset click or slider interaction
+             $("#submit-draw").prop("disabled", true);
+             // Deactivate the button visually, ready for the next click
+             $(".preset-crest-btn").removeClass('active');
+             // Reset crest value conceptually for next input, but keep display until next click
+             // crestValue = minValue; // Don't reset variable, just visual state above
+
+         } else {
+             // === FINISHED 10x DRAW (via preset click) ===
+             alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
+             resetInputFieldsFully(); // Full reset clears 10x mode and input state
+         }
+    }
+    // For normal mode, setCrestValue already handled enabling submit. No 'else' needed.
 });
+
+// --- Interaction with radial slider (updates crestValue and enables submit) ---
+// Renamed function slightly for clarity
+function handleSliderInteractionUpdate(value) {
+    // Allow slider interaction only if a draw type is selected or in 10x mode
+    if (currentDiamond !== null || inTenDrawMode) {
+        setCrestValue(value); // Update value, UI (incl. ring), and enable submit
+    }
+}
 
   //===================== RADIAL SLIDER =====================
 
@@ -751,260 +1000,224 @@ $(document).on("click", ".preset-crest-btn", function() {
       .on("touchend", pointerUp)
       .on("touchcancel", pointerUp);
 
-  //===================== SUBMIT / CANCEL DRAW =====================
+   //===================== SUBMIT / CANCEL DRAW =====================
 
+  // --- Submit entry data to Google Sheet ---
   function submitEntryToSheet(entry) {
-    // Prepare data, including batchId if it exists
+    // Prepare data, including batchId and eventKey
     let dataToSend = {
         action: "add",
         diamond: entry.diamond,
         crests: entry.crests,
         timestamp: entry.timestamp, // Pass the original timestamp
         User: entry.User,
-        batchId: entry.batchId || "" // Send batchId if present, otherwise empty string
+        batchId: entry.batchId || "",
+        event: entry.event || currentEventKey // Ensure event key is sent
     };
+    // console.log("Submitting to Sheet:", dataToSend); // Log data being sent
 
     return $.ajax({
         url: url_tracker,
         method: "POST",
         data: dataToSend,
-        timeout: 20000
+        timeout: 20000 // 20 second timeout
     });
 }
 
+// --- Submit Button Click Handler ---
 $("#submit-draw").click(function() {
-    // --- ADD THIS CHECK: Prevent submit during 10x mode ---
-    if (inTenDrawMode && !$("#extendedMode").is(":checked")) { // <<< Allow if Extended Mode is ON
-        alert("Please finish clicking the 10 results for the 10x draw first, or Cancel.");
-        return; // Don't submit normally during 10x mode *unless* Extended Mode is active
-    }
-    // --------------------------------------------------------
-
-    // Check if draw type is selected (for normal/single entry)
-    if (currentDiamond === null) {
-        alert("Select draw type first.");
-        return;
-    }
-
-    // Check if a crest value is selected (either via preset or slider)
-    // Add check to ensure crestValue isn't still the minValue if using presets/slider
-    let isCrestSelected = $(".preset-crest-btn.active").length > 0 || $("#extendedMode").is(":checked"); // Basic check
-    // More robust check: ensure a preset is active OR extended mode is on (value is handled by crestValue variable)
-    if (!isCrestSelected) {
-         alert("Please select the number of crests received using the preset buttons or Extended Mode.");
-         return;
-     }
-     // Optional stricter check: prevent submitting 0 in non-extended mode unless it's the Prize Pool button
-     if (!$("#extendedMode").is(":checked") && crestValue === 0 && !$(".preset-crest-btn[data-value='0']").hasClass('active')) {
-          if (!confirm("Record 0 crests without selecting Prize Pool?")) {
+    // Validation (already checks if draw type selected)
+    // Check if crest value makes sense (e.g., not minValue unless 0 preset active)
+     if (crestValue === minValue && !$(".preset-crest-btn[data-value='0']").hasClass('active')) {
+          if (!confirm(`Record ${minValue} tokens?`)) { // Confirmation for 0 tokens
                 return;
           }
      }
-     if (inTenDrawMode && $("#extendedMode").is(":checked")) {
-        // === HANDLE 10x SUBMISSION VIA EXTENDED MODE (SLIDER) ===
-        const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`;
-        const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
-        const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
-        const user10xCostKey = `drawTracker10xCost_${currentUser}`;
-        const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
-        const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
-    
+
+    // --- Handle 10x submission via Extended Mode (Slider submit) ---
+    if (inTenDrawMode && $("#extendedMode").is(":checked")) {
+        // (User/event specific keys defined earlier)
+        const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+        const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+        const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+        // ... other 10x keys ...
+
         tenDrawCounter++;
-        // crestValue is already set by the radial slider interaction
-    
+        // crestValue is already set by slider interaction
+
+        // *** ADD event: currentEventKey ***
         let entry = {
             tempId: `session-${tenDrawTimestamp}-${tenDrawCounter}`,
-            diamond: tenDrawDiamondCost,
-            crests: crestValue, // Use the slider value
-            timestamp: tenDrawTimestamp,
-            batchId: tenDrawBatchId,
-            User: currentUser,
-            synced: false
+            diamond: tenDrawDiamondCost, crests: crestValue,
+            timestamp: tenDrawTimestamp, batchId: tenDrawBatchId,
+            User: currentUser, synced: false,
+            event: currentEventKey // <--- Added Event Key Here
         };
 
-        console.log(`Adding 10x result ${tenDrawCounter}/10 via Extended Mode (Entry Object):`, entry);
-    
+        // console.log(`Adding 10x result ${tenDrawCounter}/10 via Extended Mode (Entry Object):`, entry);
         sessionEntries.push(entry);
-        try { // Save session entries list
-            localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
-        } catch (e) { console.error("Error saving session entry to localStorage:", e); }
-    
-        renderSessionList();
-    
-        // Update the status label AND 10x counter in storage
-        if (tenDrawCounter < 10) {
-            $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
-            // Update counter in localStorage
-            try { localStorage.setItem(user10xCounterKey, tenDrawCounter); } catch(e) {}
-            // --- Important: Do NOT reset the slider value here ---
-            // Reset preset button selection in case user clicked one before switching
-            $(".preset-crest-btn").removeClass('active');
-    
-        } else {
-            // === FINISHED 10x DRAW (via Extended Mode Submit) ===
-            alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
-            inTenDrawMode = false;
-            tenDrawCounter = 0;
-    
-            // Clear 10x state from localStorage
-            localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
-            localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
-            localStorage.removeItem(user10xBatchIdKey);
-    
-            // Reset UI fully
-            $(".draw-option").removeClass('active'); $(".preset-crest-btn").removeClass('active');
-            currentDiamond = null; crestValue = minValue; // Reset crestValue now
-            $("#crestValue").text(crestValue); $("#selected-draw-label").text("");
-            $("#draw-type-icon").attr("src", "assets/other_draw.png");
-            // Ensure extended mode is off and slider is hidden after finishing
-            $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
-            $("#submit-draw").prop("disabled", false);
-            if (ctx) { drawRing(minValue); } // Reset slider visual
-    
-            // Clear 10x state vars from memory
-            tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
-        }
-    
-        return; // <<< IMPORTANT: Stop further execution in this click handler
-    }
+        try { localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries)); }
+        catch (e) { console.error("Error saving session entry to localStorage:", e); }
 
-    // --- Create the entry object (for normal mode or session mode AFTER 10x) ---
-     // This section now ONLY runs for single draw entries (not the 10x clicks)
+        renderSessionList();
+
+        if (tenDrawCounter < 10) { // If more entries needed for 10x
+            $("#selected-draw-label").text(`Enter Result ${tenDrawCounter + 1} / 10 for ${tenDrawDiamondCost}💎 Draw`);
+            try { localStorage.setItem(user10xCounterKey, tenDrawCounter); } catch(e) {}
+            // Re-disable submit, waiting for next slider interaction/submit click
+            $("#submit-draw").prop("disabled", true);
+            // Consider resetting slider visual or value here? Maybe not, allow quick edits.
+        } else { // Finished 10x draw
+            alert(`Finished entering 10 results for ${tenDrawDiamondCost}💎 draw.`);
+            resetInputFieldsFully(); // Full reset clears 10x mode and input state
+        }
+        return; // Stop further execution for this click
+    } // --- End 10x Extended Mode Submit ---
+
+
+    // --- Create entry object for Normal / Session Mode Single Entry ---
+    // *** ADD event: currentEventKey ***
     let entryData = {
-         diamond: currentDiamond,
-         crests: crestValue,
-         timestamp: Date.now(),
-         User: currentUser
+         diamond: currentDiamond, crests: crestValue,
+         timestamp: Date.now(), User: currentUser,
+         event: currentEventKey // <--- Added Event Key Here
     };
 
-    if (inSessionMode) {
-        // === SESSION MODE LOGIC (for single entries) ===
-        const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`; // User-specific key
-    
-        let sessionEntry = {
-             ...entryData,
-             tempId: 'session-' + entryData.timestamp,
-             synced: false
-        };
-        console.log("Adding SINGLE entry to session:", sessionEntry);
-        sessionEntries.push(sessionEntry);
-    
-        // Save to user-specific localStorage key
-        try {
-             localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
-        } catch (e) {
-             console.error("Error saving session entry to localStorage:", e);
-             alert("Warning: Could not save session data. Storage might be full.");
-        }
-        renderSessionList();
-    
-        // Perform partial reset...
-         $("#extendedMode").prop("checked", false);
-         maxValue = 20;
-         $("#slider-container").addClass("d-none");
-         $("#preset-buttons-container").removeClass("d-none");
-         crestValue = minValue;
-         $("#crestValue").text(minValue);
-         $(".preset-crest-btn").removeClass('active');
-         if (ctx) { drawRing(minValue); }
-    
-     } else {
-        // === NORMAL MODE LOGIC (for single entries) ===
-        let historyEntry = {
-            ...entryData,
-            id: 'local-' + entryData.timestamp, // Use 'local-' prefix for optimistic UI in history
-            synced: false // Explicitly mark for history rendering logic
-        };
-        console.log("Submitting directly:", historyEntry);
 
-        // 1. Optimistic UI Update
+    if (inSessionMode) {
+        // === SESSION MODE: Add to local list ===
+        const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+        let sessionEntry = {
+             ...entryData, // Includes event key from entryData
+             tempId: 'session-' + entryData.timestamp,
+             synced: false,
+             batchId: null
+        };
+        // console.log("Adding SINGLE entry to session:", sessionEntry);
+        sessionEntries.push(sessionEntry);
+
+        try { localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries)); }
+        catch (e) { console.error("Error saving session entry to localStorage:", e); alert("Warning: Could not save session data."); }
+
+        renderSessionList();
+        resetInputFieldsPartially(); // Reset crests/mode, keep draw type
+
+    } else {
+        // === NORMAL MODE: Add optimistically & submit to sheet ===
+        let historyEntry = {
+            ...entryData, // Includes event key from entryData
+            id: 'local-' + entryData.timestamp,
+            synced: false, // Mark as not synced yet
+            syncFailed: false, // Add failure flag
+            batchId: null
+        };
+        // console.log("Submitting directly:", historyEntry);
+
+        // 1. Optimistic UI Update (Add to localData, update views)
         localData[currentUser].unshift(historyEntry);
-        updateHistory();
-        updateStats();
-        updateCompare();
+        updateHistory(); updateStats(); updateCompare();
 
         // 2. Show loader & Submit to Sheet
         $("#loader").removeClass("d-none");
-        submitEntryToSheet(entryData) // Pass the core data
+        submitEntryToSheet(entryData) // entryData includes event key
              .done(function(response) {
-                 console.log("Entry submitted: ", response);
+                 // console.log("Entry submitted successfully: ", response);
+                  // Optional: Update the local entry with the real ID from response if needed
+                  // let localEntry = localData[currentUser].find(e => e.id === historyEntry.id);
+                  // if (localEntry && response.id) localEntry.id = response.id;
+                 // Refetch ALL data to ensure consistency
                  fetchRemoteData(() => {
-                     updateHistory();
-                     updateStats();
-                     updateCompare();
+                     updateHistory(); updateStats(); updateCompare();
                      $("#loader").addClass("d-none");
                  });
              })
              .fail(function(jqXHR, textStatus, errorThrown) {
                  console.error("Submit Error:", textStatus, errorThrown);
-                 alert("Error submitting draw. Entry added locally but not synced.");
-                 // Update the specific history entry to show a failure icon
-                  const failedEntryElement = $(`#history-list .history-card[data-entry-id='${historyEntry.id}']`);
-                  if(failedEntryElement.length > 0) {
-                       failedEntryElement.find('.sync-indicator').html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed"></i>');
-                  }
-                  $("#loader").addClass("d-none");
+                 alert("Error submitting draw. Entry added locally but not synced to Google Sheet.");
+                 // Update the specific history entry visually to show failure
+                 const failedEntryElement = $(`#history-list .history-card[data-entry-id='${historyEntry.id}']`);
+                 if(failedEntryElement.length > 0) {
+                      failedEntryElement.find('.sync-indicator')
+                         .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed"></i>')
+                         .removeClass('text-muted text-success fa-sync fa-spin fa-check') // Clear other icons
+                         .addClass('text-danger');
+                      // Add failed class for potential styling
+                       failedEntryElement.addClass('sync-failed');
+                 }
+                 // Mark the localData entry as failed for persistence until next fetch
+                 let localEntry = localData[currentUser].find(e => e.id === historyEntry.id);
+                 if (localEntry) localEntry.syncFailed = true;
+
+                 $("#loader").addClass("d-none");
              });
 
-         // 3. Notification
+         // 3. Notification (Use event name and dynamic token icon)
          if ("Notification" in window && Notification.permission === "granted") {
-             new Notification("Draw Recorded", {
-                  body: `Gained ${entryData.crests} tokens!`, // Use entryData
-                  icon: "assets/token.png"
+             new Notification(`${currentConfig.eventName} Draw Recorded`, {
+                  body: `Gained ${entryData.crests} tokens!`,
+                  icon: getAsset('tokenIcon') // Use current event token icon
               });
          }
 
-         // 4. Perform partial reset (keep draw type, reset crests selection)
-         $("#extendedMode").prop("checked", false); // Turn off extended mode
-         maxValue = 20;
-         $("#slider-container").addClass("d-none"); // Hide slider
-         $("#preset-buttons-container").removeClass("d-none"); // Show presets
-         crestValue = minValue; // Reset crest value variable
-         $("#crestValue").text(minValue); // Reset display
-         $(".preset-crest-btn").removeClass('active'); // Deactivate preset button
-         if (ctx) { drawRing(minValue); }
-          // Note: Draw type button remains active
+         resetInputFieldsPartially(); // Reset crests/mode, keep draw type
     }
-});
+}); // --- End Submit Button Click Handler ---
 
+
+// --- Cancel Button Click Handler ---
 $("#cancel-draw").click(function() {
-    // Define user-specific keys
-    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}`;
-    const user10xCounterKey = `drawTracker10xCounter_${currentUser}`;
-    const user10xCostKey = `drawTracker10xCost_${currentUser}`;
-    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}`;
-    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}`;
-
+    // Confirmation logic is good, just uses the reset helper
     if (inTenDrawMode) {
          if (confirm("Cancel entering the current 10x draw results?")) {
-             inTenDrawMode = false;
-             tenDrawCounter = 0;
-             // --- Clear 10x state from localStorage ---
-             localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
-             localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
-             localStorage.removeItem(user10xBatchIdKey);
-             // -----------------------------------------
-             // Reset UI fully
-             $(".draw-option").removeClass('active'); $(".preset-crest-btn").removeClass('active');
-             currentDiamond = null; crestValue = minValue;
-             $("#crestValue").text(crestValue); $("#selected-draw-label").text("");
-             $("#draw-type-icon").attr("src", "assets/other_draw.png");
-             $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
-             $("#submit-draw").prop("disabled", false);
-              // Clear 10x vars from memory
-              tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
+             resetInputFieldsFully(); // Full reset cancels 10x mode
          }
-    } else { /* ... Normal cancel logic ... */
-         if (confirm("Cancel current draw input?")) {
-             currentDiamond = null; $("#selected-draw-label").text("");
-             $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
-             maxValue = 20; crestValue = minValue;
-             $("#crestValue").text(minValue); $(".preset-crest-btn").removeClass('active');
-             if (ctx) { drawRing(minValue); }
-             $(".draw-option").removeClass('active');
+    } else {
+         // Check if any input was actually made before confirming cancel
+         if (currentDiamond !== null || crestValue !== minValue || $("#extendedMode").is(":checked")) {
+              if (confirm("Cancel current draw input?")) {
+                  resetInputFieldsFully(); // Full reset clears selection
+              }
+         } else {
+             // No input made, maybe do nothing or just visually deselect?
+             // For simplicity, we can just call reset which handles all cases.
+              resetInputFieldsFully();
          }
     }
-});
+}); // --- End Cancel Button Click Handler ---
+
+
+// --- Input Field Reset Helper Functions ---
+function resetInputFieldsPartially() {
+    // Turns off extended mode (if on), resets crest value, buttons, slider visual
+    $("#extendedMode").prop("checked", false).trigger('change');
+    maxValue = 20;
+    setCrestValue(minValue); // Resets value, presets, slider visual
+    $("#submit-draw").prop("disabled", true); // Disable submit until new crest chosen
+    // Keeps draw type active
+}
+
+function resetInputFieldsFully() {
+    // Resets everything: draw type, crest value, modes, buttons, icons
+    $(".draw-option").removeClass('active');
+    currentDiamond = null;
+    $("#selected-draw-label").text("");
+    $("#draw-type-icon").attr("src", getAsset('otherDrawIcon')); // Use getAsset
+    $("#extendedMode").prop("disabled", false).prop("checked", false).trigger('change');
+    maxValue = 20;
+    setCrestValue(minValue);
+    $("#submit-draw").prop("disabled", true); // Disable submit
+
+    // Clear 10x state from memory and localStorage (user/event specific)
+    inTenDrawMode = false; tenDrawCounter = 0; tenDrawDiamondCost = 0; tenDrawTimestamp = null; tenDrawBatchId = null;
+    const user10xActiveKey = `drawTracker10xModeActive_${currentUser}_${currentEventKey}`;
+    const user10xCounterKey = `drawTracker10xCounter_${currentUser}_${currentEventKey}`;
+    const user10xCostKey = `drawTracker10xCost_${currentUser}_${currentEventKey}`;
+    const user10xTimestampKey = `drawTracker10xTimestamp_${currentUser}_${currentEventKey}`;
+    const user10xBatchIdKey = `drawTracker10xBatchId_${currentUser}_${currentEventKey}`;
+    localStorage.removeItem(user10xActiveKey); localStorage.removeItem(user10xCounterKey);
+    localStorage.removeItem(user10xCostKey); localStorage.removeItem(user10xTimestampKey);
+    localStorage.removeItem(user10xBatchIdKey);
+}
 
 //===================== SESSION ENTRY DELETE (HOLD) =====================
 $(document).on('mousedown touchstart', '#session-entries-list .session-entry-card', function(e) {
@@ -1020,7 +1233,7 @@ $(document).on('mousedown touchstart', '#session-entries-list .session-entry-car
     holdTimer = setTimeout(() => {
         $card.addClass('show-delete');
         // Console log below should now show the CORRECT tempId after fixing renderSessionList
-        console.log('Hold detected on:', tempId);
+        // console.log('Hold detected on:', tempId);
     }, HOLD_DURATION);
 });
 
@@ -1038,7 +1251,7 @@ $(document).on('click', '.delete-session-entry-btn', function(e) {
     const $card = $(this).closest('.session-entry-card');
     const tempIdToDelete = $card.data('tempid');
 
-    console.log('Attempting to delete session entry:', tempIdToDelete);
+    // console.log('Attempting to delete session entry:', tempIdToDelete);
 
     // Find index in the array based on tempId
     const indexToDelete = sessionEntries.findIndex(entry => entry.tempId === tempIdToDelete);
@@ -1050,7 +1263,7 @@ $(document).on('click', '.delete-session-entry-btn', function(e) {
         localStorage.setItem(SESSION_ENTRIES_KEY, JSON.stringify(sessionEntries));
         // Re-render the list (this will remove the item visually)
         renderSessionList();
-        console.log('Entry deleted, list updated.');
+        // console.log('Entry deleted, list updated.');
     } else {
         console.warn('Could not find session entry in array to delete with tempId:', tempIdToDelete);
          // As a fallback, just remove the visual element if data is inconsistent
@@ -1077,176 +1290,197 @@ $(document).on('mousedown touchstart', '#session-entries-list .session-entry-car
 
     holdTimer = setTimeout(() => {
         $card.addClass('show-delete');
-        console.log('Hold detected on:', tempId); // Should log correct ID now
+        // console.log('Hold detected on:', tempId); // Should log correct ID now
     }, HOLD_DURATION);
 
 });
 
-//===================== SYNC SESSION ENTRIES (Sequential) =====================
-$("#sync-session-entries").click(async function() { // <<< Add async keyword here
-    // Define user-specific key
-    const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}`;
+  //===================== SYNC SESSION ENTRIES (Sequential) =====================
+  $("#sync-session-entries").click(async function() { // Added async keyword
+    const userSessionEntriesKey = `drawTrackerSessionEntries_${currentUser}_${currentEventKey}`;
+    const userSessionModeKey = `drawTrackerSessionMode_${currentUser}_${currentEventKey}`;
 
     if (sessionEntries.length === 0) {
-        console.log("No session entries to sync.");
+        // console.log("No session entries to sync.");
+        // Optionally disable button if empty?
+        // $(this).prop('disabled', true);
         return;
     }
 
     const $syncButton = $(this);
     const $loader = $("#loader");
-    // We'll work directly with the sessionEntries array and remove successful ones
-    let entriesToProcess = [...sessionEntries]; // Copy for safety in loop if needed, though modifying sessionEntries directly is ok here
+    let entriesToProcess = [...sessionEntries]; // Copy to iterate over safely
     let originalCount = sessionEntries.length;
     let successCount = 0;
+    let failCount = 0; // Keep track of failures too
     let firstError = null;
 
     $syncButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Syncing...');
     $loader.removeClass("d-none");
+    // console.log(`Starting sequential sync for ${originalCount} entries (${currentConfig.eventName})...`);
 
-    console.log(`Starting sequential sync for ${originalCount} entries...`);
-
-    // Process entries one by one
+    // Use a standard for loop for async/await compatibility if needed,
+    // or manage promises if running in parallel (sequential is safer here)
     for (let i = 0; i < entriesToProcess.length; i++) {
         const entry = entriesToProcess[i];
-        console.log(`Attempting to sync entry ${i + 1}/${originalCount}:`, entry);
+
+        // *** ADDED CONSOLE LOG TO CHECK ENTRY ***
+        // console.log(`Processing entry ${i + 1}/${originalCount} for sync:`, JSON.stringify(entry));
+        if (!entry.event) {
+            console.warn(`Entry is missing 'event' key! Defaulting to ${currentEventKey}`, entry);
+            entry.event = currentEventKey; // Ensure event key exists before sending
+        }
+        // *** END ADDED CONSOLE LOG ***
 
         try {
-            // Prepare data for this entry
-            let dataToSend = {
-                diamond: entry.diamond,
-                crests: entry.crests,
-                timestamp: entry.timestamp,
-                User: entry.User,
-                batchId: entry.batchId || "" // Send batchId if present
-            };
+            // Pass the individual entry to the submit function
+            // submitEntryToSheet now includes the event key in its data payload
+            const response = await submitEntryToSheet(entry);
 
-            // Wait for the submission to complete
-            const response = await submitEntryToSheet(dataToSend);
-
-            // Check response from Apps Script (assuming it returns {result: 'success', ...})
             if (response && response.result === 'success') {
-                console.log(`Entry ${entry.tempId} synced successfully:`, response);
+                // console.log(`Entry ${entry.tempId} synced successfully:`, response);
                 successCount++;
-                // Remove the successfully synced entry from the *main* sessionEntries array
+                // Remove from the *main* sessionEntries array by tempId
                 const indexToRemove = sessionEntries.findIndex(item => item.tempId === entry.tempId);
                 if (indexToRemove > -1) {
                     sessionEntries.splice(indexToRemove, 1);
-                } else {
-                     console.warn("Synced item not found in sessionEntries array?", entry.tempId); // Should not happen
                 }
-                // Update localStorage immediately after successful sync
+                // Update localStorage immediately after successful sync and removal
                 localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
-                // Update the UI list immediately (optional, or wait until the end)
-                 renderSessionList(); // Re-render to remove the synced item
+                // Update the UI list immediately
+                renderSessionList();
 
             } else {
-                // If Apps Script indicates failure even though AJAX didn't fail
+                // Handle script-reported errors (e.g., result: "error" or result: "not_found")
                 console.error(`Sync failed for entry ${entry.tempId} (Apps Script Error):`, response);
-                firstError = response || { message: "Unknown script error" };
-                // Mark UI element as failed
-                 $(`#session-entries-list .session-entry-card[data-tempid="${entry.tempId}"] .sync-status-icon`)
-                         .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed - Script Error"></i>');
-                break; // Stop syncing on first script error
+                failCount++;
+                if (!firstError) firstError = response || { message: "Unknown script error" };
+                // Mark UI element as failed - find the specific card and update its icon
+                 const $card = $(`#session-entries-list .session-entry-card[data-tempid="${entry.tempId}"]`);
+                 if ($card.length) {
+                      $card.find('.sync-status-icon')
+                          .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed - Script Error"></i>');
+                      $card.addClass('sync-failed'); // Add class for potential styling
+                 }
+                // Should we stop on first error or try all? Let's try all for now.
+                // break; // Uncomment this line to stop syncing on the first script error
             }
 
-        } catch (error) {
-            // Catch AJAX errors (network, timeout, script execution error like 5xx)
+        } catch (error) { // Catch AJAX/Network errors
             console.error(`Sync failed for entry ${entry.tempId} (AJAX/Network Error), stopping sync process:`, error);
-            firstError = error;
-             // Mark UI element as failed
-             $(`#session-entries-list .session-entry-card[data-tempid="${entry.tempId}"] .sync-status-icon`)
-                     .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed - Network/Script Error"></i>');
-            break; // Stop syncing on first AJAX/network error
+            failCount++;
+            if (!firstError) firstError = error;
+            // Mark UI element as failed
+             const $card = $(`#session-entries-list .session-entry-card[data-tempid="${entry.tempId}"]`);
+             if ($card.length) {
+                  $card.find('.sync-status-icon')
+                      .html('<i class="fa-solid fa-triangle-exclamation text-danger" title="Sync Failed - Network/Script Error"></i>');
+                  $card.addClass('sync-failed'); // Add class for potential styling
+             }
+            // Definitely stop on network errors
+            break;
         }
     } // End loop
 
-    // --- Sync process finished (either completed or stopped on error) ---
+    // console.log(`Sync finished. Success: ${successCount}, Failed: ${failCount}, Remaining: ${sessionEntries.length}.`);
 
-    console.log(`Sync finished. ${successCount} successful, ${sessionEntries.length} remaining.`);
+    // --- Post-Sync Actions ---
+    // Final update to localStorage with remaining (failed) entries
+    localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
+    // Final UI update
+    renderSessionList(); // Reflects remaining entries
 
-    // Update localStorage one last time (contains only remaining/failed entries)
-     try {
-       localStorage.setItem(userSessionEntriesKey, JSON.stringify(sessionEntries));
-     } catch(e){ console.error("Final save to localStorage failed:", e); }
+    // Function to handle UI updates after sync completes
+    const finalizeSyncUI = () => {
+        $loader.addClass("d-none");
+        $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`);
 
-    // Re-render the list one last time to be sure
-    renderSessionList();
+        if (sessionEntries.length === 0 && failCount === 0) { // All succeeded
+            // console.log("All pending session entries synced successfully.");
+            alert("All session entries synced successfully!");
+            localStorage.removeItem(userSessionEntriesKey); // Clear storage key if empty
+            // Optionally turn off session mode if it was on and now empty
+            if (inSessionMode) {
+                $("#toggle-session-mode").removeClass('active').html('<i class="fa-solid fa-bolt"></i> Start Session Entry');
+                localStorage.removeItem(userSessionModeKey);
+                inSessionMode = false; // Update state variable
+                // Keep container visible briefly or hide? Hide for now.
+                 $("#session-entries-container").addClass("d-none");
+            }
+        } else if (failCount > 0) { // Some failures occurred
+             alert(`Sync process completed. ${successCount} succeeded, ${failCount} failed. Failed entries remain.`);
+        } else {
+              // This case implies loop finished, no successes, no failures? Should be rare.
+              // console.log("Sync process finished with no changes?");
+        }
+    };
 
     // Fetch remote data IF at least one entry was successfully synced
     if (successCount > 0) {
         fetchRemoteData(() => {
-            updateHistory();
-            updateStats();
-            updateCompare();
-            $loader.addClass("d-none");
-            $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`);
-
-            if (sessionEntries.length === 0) { // Check if all done *after* potential failures
-                console.log("All originally pending session entries synced successfully.");
-                localStorage.removeItem(userSessionEntriesKey); // Clear storage key
-            } else if(firstError) {
-                 alert(`Sync stopped due to an error after ${successCount} successful entries. ${sessionEntries.length} entries remain unsynced.`);
-            }
+            updateHistory(); updateStats(); updateCompare();
+            finalizeSyncUI(); // Update UI after data fetch
         });
     } else {
-        // No successes, just hide loader and reset button
-        if(firstError){
-             alert(`Sync failed on the first entry. ${sessionEntries.length} entries remain unsynced. Please check console.`);
-        } else {
-             // This case should ideally not happen if the initial length check works
-             console.log("Sync process finished with no successes and no errors?");
-        }
-        $loader.addClass("d-none");
-        $syncButton.prop('disabled', false).html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`);
+        // No successes, just finalize UI
+        finalizeSyncUI();
     }
+
 }); // End sync button click handler
 //===================== RENDER SESSION LIST =====================
 function renderSessionList() {
     let sessionList = $("#session-entries-list");
-    sessionList.empty(); // Clear current list
+    sessionList.empty(); // Clear current list first
 
-    // Update badge count first
+    // Update badge count (user/event specific list)
     $("#session-count-badge").text(sessionEntries.length);
 
+    // Show message if list is empty
     if (sessionEntries.length === 0) {
         sessionList.html('<p class="text-light text-center small mt-2 mb-0">No draws added in this session yet.</p>');
-        // If list is empty, ensure multi-select mode (if you were using it) is cancelled
-        // This part might be irrelevant now if you reverted the multi-select feature
-        // if(multiSelectModeActive) $("#cancel-session-selection").click();
+        // Make sure sync button reflects zero count if needed
+         $("#sync-session-entries").html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">0</span>`);
+
     } else {
+         // Update sync button text with current count
+         $("#sync-session-entries").html(`<i class="fa-solid fa-cloud-arrow-up"></i> Sync <span id="session-count-badge" class="badge bg-light text-dark ms-1">${sessionEntries.length}</span>`);
+
         // Display newest first
         let reversedSessionEntries = [...sessionEntries].reverse();
 
         reversedSessionEntries.forEach(entry => {
-            // Ensure tempId is treated as a string for the attribute
-            const tempIdValue = String(entry.tempId || '');
+            const tempIdValue = String(entry.tempId || ''); // Ensure tempId is treated as a string
 
+            // Use getAsset() for icons
             let diamondDisplayHtml = (entry.diamond === 0) ?
-                `<img src="assets/mystical_dial.png" class="small-icon me-1" alt="Free Draw"> Free` :
-                `${entry.diamond} <img class='small-icon mx-1' src='assets/diamond.png' alt='Diamond'>`;
+                `<img src="${getAsset('mysticalDialIcon')}" class="small-icon me-1" alt="Free Draw"> Free` :
+                `${entry.diamond} <img class='small-icon mx-1' src='${getAsset('diamond')}' alt='Diamond'>`; // Shared diamond icon
 
-            let crestDisplayHtml = `${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">`;
-            if (entry.crests === 0 && entry.diamond > 0) { // Prize Pool Item display
-                 crestDisplayHtml = `<img src="assets/prize_pool_item.png" class="small-icon ms-1" alt="Prize Pool Item"> Item`;
+            let crestDisplayHtml = `${entry.crests} <img src="${getAsset('tokenIcon')}" class="small-icon ms-1" alt="token">`;
+            // Check for prize pool item display
+            if (entry.crests === 0 && entry.diamond > 0) {
+                 crestDisplayHtml = `<img src="${getAsset('prizePoolItemIcon')}" class="small-icon ms-1" alt="Prize Pool Item"> Item`;
              }
 
-            let syncIconHtml = entry.synced ?
-                 '<span class="sync-status-icon" title="Synced"><i class="fa-solid fa-check text-success"></i></span>' :
-                 '<span class="sync-status-icon" title="Pending Sync"><i class="fa-solid fa-clock text-warning"></i></span>';
+            // Sync icon - typically shows pending ('clock') as only unsynced items are in this list.
+            // If sync fails, the icon might be updated to 'triangle-exclamation' by the sync function.
+            let syncIconHtml = '<span class="sync-status-icon" title="Pending Sync"><i class="fa-solid fa-clock text-warning"></i></span>';
+            // Check if sync failed marker was added (optional enhancement)
+            // if (entry.syncFailed) {
+            //     syncIconHtml = '<span class="sync-status-icon" title="Sync Failed"><i class="fa-solid fa-triangle-exclamation text-danger"></i></span>';
+            // }
 
-            // --- Check if it's part of a 10x batch and extract counter ---
-            let batchCounterHtml = ''; // Default to empty string
+            // Batch counter logic (no changes needed here)
+            let batchCounterHtml = '';
             if (entry.batchId && entry.batchId.startsWith('10x-')) {
-                const parts = tempIdValue.split('-'); // Split tempId like "session-TIMESTAMP-COUNTER"
-                if (parts.length >= 3) { // Check if format seems correct
-                    const counter = parts[parts.length - 1]; // Get the last part (the counter)
-                    // Create the HTML for the counter (use text-white-50 for visibility)
+                const parts = tempIdValue.split('-');
+                if (parts.length >= 3) {
+                    const counter = parts[parts.length - 1];
                     batchCounterHtml = `<span class="batch-counter small text-white-50 ms-2">(${counter}/10)</span>`;
                 }
             }
-            // --- End batch counter logic ---
 
-            // Construct list item HTML (including the delete overlay from hold-to-delete)
+            // Construct list item HTML with delete overlay
             let listItem = `
                 <div class="list-group-item session-entry-card" data-tempid="${tempIdValue}">
                     <div class="delete-overlay">
@@ -1259,7 +1493,8 @@ function renderSessionList() {
                             ${diamondDisplayHtml}
                             <i class="fa-solid fa-arrow-right text-muted mx-2"></i>
                             ${crestDisplayHtml}
-                            ${batchCounterHtml}  </span>
+                            ${batchCounterHtml}
+                        </span>
                         ${syncIconHtml}
                     </div>
                 </div>`;
@@ -1267,581 +1502,487 @@ function renderSessionList() {
             sessionList.append(listItem);
         });
     }
-    // Badge count already updated at the top
-}
+} // End renderSessionList
   //===================== UPDATE HISTORY / HOME LIST =====================
 
   function updateHistory() {
     let historyList = $("#history-list");
-    historyList.empty();
+    historyList.empty(); // Clear previous history
 
-    const userEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
+    // --- Filter localData for the current event ---
+    const allUserEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
+    const userEntries = allUserEntries.filter(entry => entry.event === currentEventKey);
+    // console.log(`Rendering history for ${currentUser} - ${currentConfig.eventName}: ${userEntries.length} entries found.`);
 
+    // Display message if no history for this specific event
     if (userEntries.length === 0) {
-        historyList.html('<li class="list-group-item text-center text-muted">No history.</li>');
-        return;
+        historyList.html(`<li class="list-group-item text-center text-muted">No history for ${currentConfig.eventName}.</li>`);
+        return; // Stop execution for this function
     }
 
+    // Iterate through the filtered entries for the current event
     userEntries.forEach(entry => {
-        if (!entry || typeof entry.timestamp !== 'number' || isNaN(entry.timestamp)) {
-            // Skip invalid entries quietly
-            console.warn("Skipping invalid history entry:", entry);
-            return;
+        // Basic validation for the entry itself
+        if (!entry || typeof entry.timestamp !== 'number' || isNaN(entry.timestamp) || !entry.id) {
+            console.warn("Skipping invalid history entry during render:", entry);
+            return; // Skip this iteration
         }
 
+        // Format date and time
         let drawDate = new Date(entry.timestamp).toLocaleDateString();
-        let drawTime = new Date(entry.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        let drawTime = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Format draw cost text using getAsset()
         let diamondText = (entry.diamond === 0) ?
-            `<img src="assets/mystical_dial.png" class="small-icon" alt="Free Draw"> Free` :
-            `${entry.diamond} <img class='small-icon' src='assets/diamond.png' alt='Diamond'>`;
+            `<img src="${getAsset('mysticalDialIcon')}" class="small-icon" alt="Free Draw"> Free` :
+            `${entry.diamond} <img class='small-icon' src='${getAsset('diamond')}' alt='Diamond'>`; // Shared diamond icon
 
-        let entryId = entry.id;
-        let entryIdAttr = entryId ? `data-entry-id="${entryId}"` : '';
+        // Format crests received text using getAsset()
+        let crestText = `${entry.crests} <img src="${getAsset('tokenIcon')}" class="small-icon ms-1" alt="token">`;
+         // Handle prize pool item display
+         if (entry.crests === 0 && entry.diamond > 0) {
+             crestText = `<img src="${getAsset('prizePoolItemIcon')}" class="small-icon ms-1" alt="Prize Pool Item"> Item`;
+         }
 
-        // --- Determine Sync Status and Buttons ---
-        let isLocal = entryId && String(entryId).startsWith('local-'); // Check for 'local-' prefix
-        let canEditDelete = entryId && !isLocal; // Can only edit/delete non-local (synced) entries
+        // Determine sync status and buttons
+        let entryId = entry.id; // Already validated entry.id exists
+        let entryIdAttr = `data-entry-id="${entryId}"`; // Use the actual ID from sheet or 'local-' prefixed ID
+        let isLocal = String(entryId).startsWith('local-');
+        let syncFailed = entry.syncFailed === true; // Check explicit flag
 
         let syncIconHtml = '';
-        if (isLocal) {
-            // If ID starts with 'local-', it's syncing (added optimistically in Normal Mode)
+        let canEditDelete = false;
+        let cardClass = 'history-card mb-3'; // Base class
+
+        if (syncFailed) {
+            syncIconHtml = '<span class="sync-indicator text-danger small ms-2" title="Sync Failed"><i class="fa-solid fa-triangle-exclamation"></i></span>';
+            cardClass += ' sync-failed'; // Add class for styling failed entries
+        } else if (isLocal) {
             syncIconHtml = '<span class="sync-indicator text-muted small ms-2" title="Syncing..."><i class="fas fa-sync fa-spin"></i></span>';
-        } else if (entryId) {
-             // If it has an ID and it's not local, it's synced (from sheet)
-             syncIconHtml = '<span class="sync-indicator text-success small ms-2" title="Synced"><i class="fa-solid fa-check"></i></span>';
-             // You can uncomment the next line and comment the one above if you prefer NO icon for synced items
-             // syncIconHtml = '';
+        } else { // Entry has a non-local ID and hasn't failed sync = Synced
+            // syncIconHtml = ''; // No icon for synced (or use checkmark below)
+            syncIconHtml = '<span class="sync-indicator text-success small ms-2" title="Synced"><i class="fa-solid fa-check"></i></span>';
+            canEditDelete = true; // Allow edit/delete only for successfully synced entries
         }
-        // Note: Entries added in Session Mode *don't* appear here until they are synced and fetched.
 
+        // Generate Edit/Delete buttons only if allowed
         let editDeleteButtons = canEditDelete ?
-             `<button class="btn btn-sm btn-outline-danger delete-entry" data-id="${entryId}"><i class="fa fa-trash"></i></button>` +
-             `<button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entryId}"><i class="fa fa-edit"></i></button>` :
-             ''; // No edit/delete for local entries
-        // --- End Determine Sync Status ---
+             `<button class="btn btn-sm btn-outline-danger delete-entry ms-2" data-id="${entryId}" title="Delete Entry"><i class="fa fa-trash"></i></button>` +
+             `<button class="btn btn-sm btn-outline-primary edit-entry ms-2" data-id="${entryId}" title="Edit Entry"><i class="fa fa-edit"></i></button>` :
+             ''; // No buttons for local or failed entries
 
-
-        // --- Construct List Item HTML ---
+        // Construct List Item HTML
         let listItem = `
-            <div class="history-card mb-3" ${entryIdAttr}>
+            <div class="${cardClass}" ${entryIdAttr}>
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="history-date">${drawDate} ${drawTime}</div>
                         <div class="history-details">
-                            ${diamondText} → ${entry.crests} <img src="assets/token.png" class="small-icon ms-1" alt="token">
+                            ${diamondText} → ${crestText}
                         </div>
                     </div>
-                    <div class="d-flex align-items-center"> ${editDeleteButtons}
-                        ${syncIconHtml}   </div>
+                    <div class="d-flex align-items-center">
+                        ${editDeleteButtons}
+                        ${syncIconHtml}
+                    </div>
                 </div>
             </div>`;
 
         historyList.append(listItem);
-    });
-}
+    }); // End forEach loop
+} // End updateHistory function
 
   //===================== UPDATE STATS =====================
 
   function updateStats() {
-      let entries = localData[currentUser];
+    // --- Filter localData for the current event ---
+    const allUserEntries = Array.isArray(localData[currentUser]) ? localData[currentUser] : [];
+    const entries = allUserEntries.filter(entry => entry.event === currentEventKey); // Filter here
+    // console.log(`Updating stats for ${currentUser} - ${currentConfig.eventName}: ${entries.length} entries.`);
 
-      if (!entries || !Array.isArray(entries)) {
-          $("#tab-stats .container").html('<p class="text-light text-center mt-4">No stats data.</p>');
-          return;
-      }
+    const statsContainer = $("#tab-stats .container");
+    const characterIcon = getAsset(currentUser === 'Mitko' ? 'mitkoIcon' : 'aylinIcon');
+    const tokenIcon = getAsset('tokenIcon'); // Get current event token icon
 
-      // Check if stats HTML structure exists, if not, create it
-      if ($("#tab-stats .container #stats-chart").length === 0) {
-          $("#tab-stats .container").html(`
-              <div class="stats-panel card p-3 mb-3">
-                  <div class="text-center mb-3">
-                      <img id="character-image" src="" alt="Character" class="character-img mb-2">
-                      <h4 id="progress-title">Progress</h4>
-                  </div>
-                  <div id="stats-toggle" class="d-flex justify-content-center mb-3">
-                      <button id="toggle-tokens" class="btn btn-sm btn-outline-light">Tokens</button>
-                      <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
-                  </div>
-                  <div class="progress mb-3">
-                      <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
-                  </div>
-                  <p id="stats-summary" class="mb-0">
-                      Total: <span id="total-crest">0</span> <img src="assets/token.png" alt="Token" class="small-icon">
-                  </p>
-              </div>
-              <canvas id="stats-chart" class="mb-4"></canvas>
-              <div class="card mb-3 p-2">
-                  <h5 class="text-dark">Free vs Diamond</h5>
-                  <canvas id="stats-pie"></canvas>
-              </div>
-              <div class="card mb-3 p-2">
-                  <h5 class="text-dark">Tokens Over Time (Moving Average)</h5>
-                  <canvas id="stats-line"></canvas>
-              </div>
-              <div class="card mb-3 p-2">
-                  <h5 class="text-dark"><img src="assets/token.png" class="draw-img" alt="Dial" /> Distribution</h5>
-                  <canvas id="stats-hist"></canvas>
-              </div>
-              <div class="card mb-3 p-2">
-                   <h5 class="text-dark">Average <img src="assets/token.png" class="draw-img" alt="Dial" /> by Diamond Tier</h5>
-                  <canvas id="stats-tier"></canvas>
-              </div>
-              <div id="advanced-metrics" class="card p-3" style="background-color: rgba(0, 0, 0, 0.5);">
-                  <h5 class="text-light mb-3">Advanced Metrics</h5>
-                  <div id="advanced-metrics-grid" class="metrics-grid"></div>
-              </div>
-          `);
-          // Set initial character image
-          let charImgSrc = (currentUser === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
-          $("#character-image").attr("src", charImgSrc);
-      }
+    // Check if stats HTML structure needs to be created (e.g., first load)
+    // Added IDs to elements that might need updating without full recreation
+    if (statsContainer.children().length === 0 || $("#stats-chart").length === 0) {
+        // console.log("Creating stats tab structure.");
+        statsContainer.html(`
+            <h3 class="mt-3 text-light" id="stats-event-title">Stats for ${currentConfig.eventName}</h3>
+            <div class="stats-panel card p-3 mb-3">
+                <div class="text-center mb-3">
+                    <img id="character-image" src="${characterIcon}" alt="Character" class="character-img mb-2" style="max-height: 150px; width: auto;">
+                    <h4 id="progress-title">Progress</h4>
+                </div>
+                <div id="stats-toggle" class="d-flex justify-content-center mb-3">
+                    <button id="toggle-tokens" class="btn btn-sm btn-outline-light">Tokens</button>
+                    <button id="toggle-diamonds" class="btn btn-sm btn-outline-light ms-2">Diamonds Spent</button>
+                </div>
+                <div class="progress mb-3" id="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+                <p id="stats-summary" class="mb-0">Total: <span id="total-value">0</span></p>
+            </div>
+            <canvas id="stats-chart" class="mb-4"></canvas>
+            <div class="card mb-3 p-2">
+                <h5 class="text-dark chart-title" id="pie-chart-title">Free vs Diamond Draws</h5>
+                <canvas id="stats-pie"></canvas>
+            </div>
+            <div class="card mb-3 p-2">
+                <h5 class="text-dark chart-title" id="line-chart-title">Tokens Over Time (Moving Avg)</h5>
+                <canvas id="stats-line"></canvas>
+            </div>
+            <div class="card mb-3 p-2">
+                 <h5 class="text-dark chart-title" id="hist-chart-title">
+                      <img src="${tokenIcon}" class="small-icon" alt="Token" /> Token Value Distribution
+                 </h5>
+                 <canvas id="stats-hist"></canvas>
+            </div>
+            <div class="card mb-3 p-2">
+                <h5 class="text-dark chart-title" id="tier-chart-title">
+                      Average <img src="${tokenIcon}" class="small-icon" alt="Token" /> by Draw Cost
+                </h5>
+                <canvas id="stats-tier"></canvas>
+            </div>
+            <div id="advanced-metrics" class="card p-3 mb-4" style="background-color: rgba(0, 0, 0, 0.5);">
+                <h5 class="text-light mb-3">Advanced Metrics</h5>
+                <div id="advanced-metrics-grid" class="metrics-grid">
+                    </div>
+            </div>
+        `);
+        // Attach listeners after creating elements
+        attachStatsToggleListeners();
+    } else {
+        // If structure exists, just update dynamic parts like title and character image
+        $("#stats-event-title").text(`Stats for ${currentConfig.eventName}`);
+        $("#character-image").attr("src", characterIcon);
+        // Update chart titles that use icons dynamically
+        $('#hist-chart-title').html(`<img src="${tokenIcon}" class="small-icon" alt="Token" /> Token Value Distribution`);
+        $('#tier-chart-title').html(`Average <img src="${tokenIcon}" class="small-icon" alt="Token" /> by Draw Cost`);
+        // Ensure listeners are still attached (safer to call again)
+         attachStatsToggleListeners();
+    }
 
-      // Attach listeners and set active toggle
-      attachStatsToggleListeners();
-      $("#toggle-tokens, #toggle-diamonds").removeClass("active");
-      $(`#toggle-${statsView}`).addClass("active");
+    // Ensure correct toggle button is active
+    $("#toggle-tokens, #toggle-diamonds").removeClass("active");
+    $(`#toggle-${statsView}`).addClass("active");
 
-      // Update all charts and metrics
-      updateMainBarChart(entries);
-      updatePieChart(entries);
-      updateLineChart(entries);
-      updateHistogram(entries);
-      updateTierChart(entries);
-      updateAdvancedMetrics(entries);
-  }
+    // --- Call update functions with the FILTERED entries ---
+    updateMainBarChart(entries);
+    updatePieChart(entries);
+    updateLineChart(entries);
+    updateHistogram(entries);
+    updateTierChart(entries);
+    updateAdvancedMetrics(entries); // This calls computeMetrics with filtered data
+} // End updateStats function
 
   //===================== CHART UPDATE FUNCTIONS =====================
+  function updateMainBarChart(entries) { // entries are pre-filtered
+    const canvas = document.getElementById("stats-chart");
+    if (!canvas) return;
+    if (window.myChart) window.myChart.destroy(); // Destroy previous instance
 
-  function updateMainBarChart(entries) {
-      const canvas = document.getElementById("stats-chart");
-      if (!canvas) return;
+    // Use event-specific target from config, fallback to default
+    const progressTarget = currentConfig.targetTokens || 1200;
+    const labels = entries.map((_, i) => "D" + (entries.length - i)).reverse(); // Draw N...1
 
-      // Destroy existing chart instance if it exists
-      if (window.myChart) {
-          window.myChart.destroy();
-      }
+    let dataPoints, chartLabel, summaryHtml, progressPercent;
+    const tokenIcon = getAsset('tokenIcon'); // Use current event token icon
+    const diamondIcon = getAsset('diamond'); // Use shared diamond icon
 
-      const labels = entries.map((_, i) => "Draw " + (entries.length - i)).reverse();
-      const progressTarget = 1200; // Target for progress bar (tokens)
+    if (statsView === "tokens") {
+        $("#progress-title").html(`Token Progress <img src='${tokenIcon}' alt='Token' class='small-icon'>`);
+        let totalCrests = entries.reduce((sum, e) => sum + (e.crests || 0), 0);
+        // Update summary text with current token icon
+        summaryHtml = `Total Tokens: <span id='total-value'>${totalCrests}</span> <img src='${tokenIcon}' alt='Token' class='small-icon'> / ${progressTarget}`;
+        progressPercent = (progressTarget > 0) ? Math.min((totalCrests / progressTarget) * 100, 100) : 0;
+        $("#progress-bar").css("width", progressPercent + "%").text(Math.floor(progressPercent) + "%");
+        $("#progress-bar-container").show(); // Show progress bar for tokens
+        dataPoints = entries.map(e => e.crests || 0).reverse();
+        chartLabel = "Tokens per Draw";
+        window.myChart = new Chart(canvas, {
+            type: "bar", data: { labels, datasets: [{ label: chartLabel, data: dataPoints, backgroundColor: "#FFD4D4" }] },
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
 
-      // Ensure character image is correct
-      const characterImageSrc = (currentUser === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
-      const imgElement = $("#character-image");
-      if (imgElement.length) {
-          imgElement.attr("src", characterImageSrc);
-      }
-
-      if (statsView === "tokens") {
-          $("#progress-title").html(`Token Progress <img src='assets/token.png' alt='Token' class='small-icon'>`);
-          let totalCrests = entries.reduce((sum, e) => sum + e.crests, 0);
-          $("#stats-summary").html(`Total Tokens: <span id='total-crest'>${totalCrests}</span> <img src='assets/token.png' alt='Token' class='small-icon'> / ${progressTarget}`);
-          let progressPercent = Math.min((totalCrests / progressTarget) * 100, 100);
-          $("#progress-bar")
-              .css("width", progressPercent + "%")
-              .text(Math.floor(progressPercent) + "%")
-              .parent().show(); // Show progress bar container
-
-          let dataPoints = entries.map(e => e.crests).reverse();
+    } else { // statsView === "diamonds"
+         $("#progress-title").html(`Diamond Spending <img src='${diamondIcon}' alt='Diamond' class='small-icon'>`);
+         // Calculate actual total diamonds spent for *these* entries
+         let totalDiamonds = entries.reduce((sum, e) => sum + (e.diamond || 0), 0);
+         // Update summary text with shared diamond icon
+         summaryHtml = `Total Spent: <span id='total-value'>${totalDiamonds}</span> <img src='${diamondIcon}' alt='Diamond' class='small-icon'>`;
+         $("#progress-bar-container").hide(); // Hide progress bar for diamonds
+         dataPoints = entries.map(e => e.diamond || 0).reverse();
+         chartLabel = "Diamonds per Draw";
           window.myChart = new Chart(canvas, {
-              type: "bar",
-              data: {
-                  labels: labels,
-                  datasets: [{
-                      label: "Tokens per Draw",
-                      data: dataPoints,
-                      backgroundColor: "#FFD4D4"
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: true,
-                  scales: {
-                      y: { beginAtZero: true }
-                  },
-                  plugins: {
-                      legend: { display: false }
-                  }
-              }
-          });
-      } else { // statsView === "diamonds"
-          $("#progress-title").html(`Diamond Spending <img src='assets/diamond.png' alt='Diamond' class='small-icon'>`);
-          let totalDiamonds = entries.reduce((sum, e) => sum + (e.diamond > 0 ? e.diamond : 0), 0);
-          $("#stats-summary").html(`Total Spent: <span id='total-diamonds'>${totalDiamonds}</span> <img src='assets/diamond.png' alt='Diamond' class='small-icon'>`);
-          $("#progress-bar").parent().hide(); // Hide progress bar container
+             type: "bar", data: { labels, datasets: [{ label: chartLabel, data: dataPoints, backgroundColor: "#FFDEAD" }] }, // Orange color
+             options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+         });
+    }
+     // Update the summary text element common to both views
+    $("#stats-summary").html(summaryHtml);
+}
 
-          let dataPoints = entries.map(e => (e.diamond > 0 ? e.diamond : 0)).reverse();
-          window.myChart = new Chart(canvas, {
-              type: "bar",
-              data: {
-                  labels: labels,
-                  datasets: [{
-                      label: "Diamonds per Draw",
-                      data: dataPoints,
-                      backgroundColor: "#FFDEAD" // Different color for diamonds
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: true,
-                  scales: {
-                      y: { beginAtZero: true }
-                  },
-                  plugins: {
-                      legend: { display: false }
-                  }
-              }
-          });
-      }
-  }
+// --- Pie Chart (Free vs Diamond Draws) ---
+function updatePieChart(entries) { // entries are pre-filtered
+    const canvas = document.getElementById("stats-pie");
+    if (!canvas) return;
+    if (window.myPieChart) window.myPieChart.destroy();
+    // Clear canvas if no data for this event
+    if (entries.length === 0) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); return; }
 
-  function updatePieChart(entries) {
-      const canvas = document.getElementById("stats-pie");
-      if (!canvas) return;
+    let freeCount = entries.filter(e => (e.diamond || 0) === 0).length;
+    let diamondCount = entries.length - freeCount;
 
-      if (window.myPieChart) {
-          window.myPieChart.destroy();
-      }
-      if (entries.length === 0) {
-          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear if no data
-          return;
-      }
+    // No assets needed here, just data calculation
+    window.myPieChart = new Chart(canvas, {
+        type: "pie",
+        data: {
+            labels: [`Free (${freeCount})`, `Diamond (${diamondCount})`],
+            datasets: [{ data: [freeCount, diamondCount], backgroundColor: ["#FFAEC9", "#F28EFF"], borderColor: '#fff', borderWidth: 1 }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top' } } }
+    });
+}
 
-      let freeCount = entries.filter(e => e.diamond === 0).length;
-      let diamondCount = entries.length - freeCount;
+// --- Line Chart (Tokens Moving Average) ---
+function updateLineChart(entries) { // entries are pre-filtered
+    const canvas = document.getElementById("stats-line");
+    if (!canvas) return;
+    if (window.myLineChart) window.myLineChart.destroy();
+    // Clear canvas if no data for this event
+    if (entries.length === 0) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); return; }
 
-      window.myPieChart = new Chart(canvas, {
-          type: "pie",
-          data: {
-              labels: [`Free (${freeCount})`, `Diamond (${diamondCount})`],
-              datasets: [{
-                  data: [freeCount, diamondCount],
-                  backgroundColor: ["#FFAEC9", "#F28EFF"],
-                  borderColor: '#fff',
-                  borderWidth: 1
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {
-                  legend: {
-                      display: true,
-                      position: 'top'
-                  }
-              }
-          }
-      });
-  }
+    let sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
+    const windowSize = 5; // Moving average window size
+    let tokensArray = sorted.map(e => e.crests || 0);
+    let labels = sorted.map((_, i) => "D" + (i + 1)); // Label as Draw 1, Draw 2...
+    let maData = []; // Moving average data points
 
-  function updateLineChart(entries) {
-      const canvas = document.getElementById("stats-line");
-      if (!canvas) return;
+    // Calculate moving average
+    for (let i = 0; i < tokensArray.length; i++) {
+        let start = Math.max(0, i - windowSize + 1);
+        let subset = tokensArray.slice(start, i + 1);
+        let avg = subset.reduce((s, val) => s + val, 0) / subset.length;
+        maData.push(avg);
+    }
 
-      if (window.myLineChart) {
-          window.myLineChart.destroy();
-      }
-      if (entries.length === 0) {
-           canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear if no data
-          return;
-      }
+    // No assets needed here, just data calculation
+    window.myLineChart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Tokens (${windowSize}-Draw Avg)`, data: maData,
+                backgroundColor: "rgba(255, 184, 238, 0.5)", borderColor: "#ffaec9",
+                borderWidth: 2, fill: true, tension: 0.2 // Slight curve
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: true, position: 'top' } } }
+    });
+}
 
-      // Sort entries by timestamp for chronological order
-      let sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
-      const windowSize = 3; // Moving average window
-      let tokensArray = sorted.map(e => e.crests);
-      let labels = sorted.map((e, i) => "D" + (i + 1)); // Label as Draw 1, Draw 2, ...
-      let maData = []; // Moving average data
+// --- Histogram (Token Value Distribution) ---
+function updateHistogram(entries) { // entries are pre-filtered
+    const canvas = document.getElementById("stats-hist");
+    if (!canvas) return;
+    if (window.myHistChart) window.myHistChart.destroy();
+    // Clear canvas if no data for this event
+    if (entries.length === 0) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); return; }
 
-      for (let i = 0; i < tokensArray.length; i++) {
-          let start = Math.max(0, i - windowSize + 1);
-          let subset = tokensArray.slice(start, i + 1);
-          let avg = subset.reduce((s, val) => s + val, 0) / subset.length;
-          maData.push(avg);
-      }
+    // Count occurrences of each crest value
+    let distributionMap = {};
+    entries.forEach(e => {
+        distributionMap[e.crests || 0] = (distributionMap[e.crests || 0] || 0) + 1;
+    });
 
-      window.myLineChart = new Chart(canvas, {
-          type: "line",
-          data: {
-              labels: labels,
-              datasets: [{
-                  label: `Tokens (${windowSize}-Draw Avg)`,
-                  data: maData,
-                  backgroundColor: "rgba(255, 184, 238, 0.5)",
-                  borderColor: "#ffaec9",
-                  borderWidth: 2,
-                  fill: true,
-                  tension: 0.2 // Smooths the line
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: {
-                  y: { beginAtZero: true }
-              },
-              plugins: {
-                  legend: {
-                      display: true,
-                      position: 'top'
-                  }
-              }
-          }
-      });
-  }
+    let crestValues = Object.keys(distributionMap).map(v => parseInt(v)).sort((a, b) => a - b);
+    let frequencies = crestValues.map(v => distributionMap[v]);
 
-  function updateHistogram(entries) {
-      const canvas = document.getElementById("stats-hist");
-      if (!canvas) return;
+    // Update title dynamically (already done in updateStats)
+    // $(canvas).siblings('h5#hist-chart-title').html(`<img src="${getAsset('tokenIcon')}" class="small-icon" alt="Token" /> Token Value Distribution`);
 
-      if (window.myHistChart) {
-          window.myHistChart.destroy();
-      }
-      if (entries.length === 0) {
-           canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear if no data
-          return;
-      }
+    window.myHistChart = new Chart(canvas, {
+        type: "bar",
+        data: {
+            labels: crestValues.map(v => String(v)), // Crest values as labels
+            datasets: [{ label: "Draw count", data: frequencies, backgroundColor: "#fdc5f5" }] // Light pink bars
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, // Integer counts on Y-axis
+            plugins: { legend: { display: false } } // Hide legend, title is sufficient
+        }
+    });
+}
 
-      // Count occurrences of each crest value
-      let distributionMap = {};
-      entries.forEach(e => {
-          distributionMap[e.crests] = (distributionMap[e.crests] || 0) + 1;
-      });
+// --- Tier Chart (Average Tokens by Draw Cost) ---
+ function updateTierChart(entries) { // entries are pre-filtered
+    const canvas = document.getElementById("stats-tier");
+    if (!canvas) return;
+    if (window.myTierChart) window.myTierChart.destroy();
+    // Clear canvas if no data for this event
+    if (entries.length === 0) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); return; }
 
-      // Prepare data for bar chart (sorted labels)
-      let crestValues = Object.keys(distributionMap).map(v => parseInt(v)).sort((a, b) => a - b);
-      let frequencies = crestValues.map(v => distributionMap[v]);
+    let tiers = [0, 25, 50, 450, 500]; // Define diamond cost tiers
+    let tierLabels = ["Free(0)", "25💎", "50💎", "450💎", "500💎"];
+    let avgTokensForTier = [];
+    let drawCountsForTier = []; // Store draw counts for tooltips
 
-      window.myHistChart = new Chart(canvas, {
-          type: "bar",
-          data: {
-              labels: crestValues.map(v => String(v)), // Crest values as labels
-              datasets: [{
-                  label: "Draw count",
-                  data: frequencies,
-                  backgroundColor: "#fdc5f5"
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: {
-                  y: {
-                      beginAtZero: true,
-                      ticks: { stepSize: 1 } // Integer ticks for count
-                  }
-              },
-              plugins: {
-                  legend: { display: false } // Label in title is sufficient
-              }
-          }
-      });
-  }
+    // Calculate average tokens for each tier
+    tiers.forEach(t => {
+        let subset = entries.filter(e => (e.diamond || 0) === t);
+        drawCountsForTier.push(subset.length);
+        // Calculate average only if there are entries in the subset
+        const avg = subset.length === 0 ? 0 : subset.reduce((acc, e) => acc + (e.crests || 0), 0) / subset.length;
+        avgTokensForTier.push(avg);
+    });
 
-   function updateTierChart(entries) {
-      const canvas = document.getElementById("stats-tier");
-      if (!canvas) return;
+    // Update title dynamically (already done in updateStats)
+    // $(canvas).siblings('h5#tier-chart-title').html(`Average <img src="${getAsset('tokenIcon')}" class="small-icon" alt="Token" /> by Draw Cost`);
 
-      if (window.myTierChart) {
-          window.myTierChart.destroy();
-      }
-       if (entries.length === 0) {
-           canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear if no data
-           return;
-       }
+    window.myTierChart = new Chart(canvas, {
+        type: "bar",
+        data: {
+            labels: tierLabels,
+            datasets: [{
+                label: "Avg Tokens", data: avgTokensForTier,
+                backgroundColor: "#fed8de", // Light pink/peach bars
+                drawCounts: drawCountsForTier // Store draw counts in dataset for tooltip
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } },
+            plugins: {
+                legend: { display: false },
+                tooltip: { // Custom tooltip to show count
+                    callbacks: {
+                        label: ctx => `Avg Tokens: ${ctx.parsed.y.toFixed(2)}`,
+                        afterLabel: ctx => `(${ctx.dataset.drawCounts[ctx.dataIndex]} draws)`
+                    }
+                }
+            }
+        }
+    });
+}
 
-      let tiers = [0, 25, 50, 450, 500]; // Define diamond tiers
-      let tierLabels = ["Free(0)", "25💎", "50💎", "450💎", "500💎"];
-      let avgTokensForTier = [];
-      let drawCountsForTier = []; // Store draw counts for tooltips
-
-      tiers.forEach(t => {
-          let subset = entries.filter(e => e.diamond === t);
-          drawCountsForTier.push(subset.length);
-          avgTokensForTier.push(subset.length === 0 ? 0 : subset.reduce((acc, e) => acc + e.crests, 0) / subset.length);
-      });
-
-      window.myTierChart = new Chart(canvas, {
-          type: "bar",
-          data: {
-              labels: tierLabels,
-              datasets: [{
-                  label: "Avg Tokens",
-                  data: avgTokensForTier,
-                  backgroundColor: "#fed8de",
-                  drawCounts: drawCountsForTier // Store draw counts in dataset
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: {
-                  y: { beginAtZero: true }
-              },
-              plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                      callbacks: {
-                          label: function(context) {
-                              return `Avg Tokens: ${context.parsed.y.toFixed(2)}`;
-                          },
-                           afterLabel: function(context) {
-                              // Access draw counts from dataset
-                              return `(${context.dataset.drawCounts[context.dataIndex]} draws)`;
-                          }
-                      }
-                  }
-              }
-          }
-      });
-  }
 
 //===================== METRICS CALCULATION (Client-Side Heuristic) =====================
 function computeMetrics(entries) {
     entries = Array.isArray(entries) ? entries : [];
     let totalDraws = entries.length;
-    let totalCrests = entries.reduce((acc, e) => acc + (e.crests || 0), 0); // Ensure crests is a number
+    let totalCrests = entries.reduce((acc, e) => acc + (e.crests || 0), 0);
 
-    // --- Heuristic Diamond Spending Calculation ---
-    let totalDiamondsSpent = 0;
+    // Calculate ACTUAL total diamonds spent (raw sum) - Keep for potential other uses
+    let totalActualDiamondsSpent = entries.reduce((acc, e) => acc + (e.diamond || 0), 0);
+
+    // --- Calculate HEURISTIC total diamonds spent (prorating 10-pulls) ---
+    let heuristicTotalDiamondsSpent = 0;
     entries.forEach(entry => {
-        const cost = entry.diamond || 0; // Ensure diamond is a number
+        const cost = entry.diamond || 0;
         if (cost === 450 || cost === 500) {
-             // Approximate cost per result for 10x pulls for efficiency calc
-             // Note: This makes total spent inaccurate but efficiency potentially more intuitive
-             totalDiamondsSpent += cost / 10;
+            // Add the prorated cost per result (cost/10)
+            heuristicTotalDiamondsSpent += (cost / 10);
         } else if (cost > 0) {
-             totalDiamondsSpent += cost; // Add cost for normal 25/50 draws
+            // Add the normal cost for single diamond draws (25 or 50)
+            heuristicTotalDiamondsSpent += cost;
         }
+        // Free draws (cost=0) add nothing
     });
     // --- End Heuristic Calculation ---
 
+
     let totalFree = entries.filter(e => (e.diamond || 0) === 0).length;
     let totalDiamondDraws = totalDraws - totalFree;
-
     let tokensPerDraw = totalDraws === 0 ? 0 : totalCrests / totalDraws;
-
     let best = entries.reduce((b, e) => (e && typeof e.crests === 'number' && e.crests > b.crests) ? e : b, { crests: -Infinity });
     let bestDraw = (best.crests === -Infinity) ? null : best;
-
     let luckStatus = "Average";
-    if (tokensPerDraw > 9) { luckStatus = "Lucky"; }
-    else if (tokensPerDraw < 9 && totalDraws > 0) { luckStatus = "Unlucky"; }
-    else if (totalDraws === 0) { luckStatus = "N/A"; }
+    const luckyThreshold = 10.0;
+    const unluckyThreshold = 7.0;
+    if (totalDraws === 0) { luckStatus = "N/A"; }
+    else if (tokensPerDraw >= luckyThreshold) { luckStatus = "Lucky"; }
+    else if (tokensPerDraw < unluckyThreshold) { luckStatus = "Unlucky"; }
 
-    let costEfficiency = null;
-    if (totalDiamondsSpent > 0 && totalCrests > 0) {
-        costEfficiency = totalDiamondsSpent / totalCrests;
-    } else if (totalDiamondsSpent === 0 && totalCrests > 0) {
-        costEfficiency = 0;
-    } else if (totalDiamondsSpent > 0 && totalCrests === 0) {
+    // --- Calculate Cost Efficiency using HEURISTIC spend vs TOTAL crests ---
+    // This gives an overall efficiency measure including free draws contribution
+    let costEfficiency = null; // Heuristic Diamonds / Total Token
+    if (heuristicTotalDiamondsSpent > 0 && totalCrests > 0) {
+        costEfficiency = heuristicTotalDiamondsSpent / totalCrests;
+    } else if (heuristicTotalDiamondsSpent > 0 && totalCrests === 0) {
+        // Spent diamonds (heuristically), got zero tokens overall
         costEfficiency = Infinity;
+    } else if (heuristicTotalDiamondsSpent === 0 && totalCrests > 0) {
+         // Only free draws resulting in tokens, or no diamond draws
+         costEfficiency = 0; // 0 cost per token is accurate here
+    } else {
+         // No heuristic spend and no tokens (or no draws)
+         costEfficiency = null; // N/A
     }
+    // --- End Cost Efficiency Calculation ---
 
-    return {
+
+    const metricsResult = {
         totalDraws, totalFree, totalDiamondDraws, totalCrests,
-        totalDiamondsSpent, // Represents an adjusted value, not true total spend
-        bestDraw, tokensPerDraw, costEfficiency, luckStatus
+        totalActualDiamondsSpent, // Keep the raw value if needed elsewhere
+        heuristicTotalDiamondsSpent, // Use this for display
+        bestDraw, tokensPerDraw, costEfficiency, // Use heuristic efficiency
+        luckStatus
     };
-}
+
+    // console.log("computeMetrics calculated:", metricsResult);
+    return metricsResult;
+} // End computeMetrics
 
 //===================== METRICS HTML BUILDER (SHARED) =====================
 function buildMetricsHTML(m, isComparePage = false, compareFlags = {}) {
-    // Calculate percentages based on total draws
-    let freePercent = (m.totalDraws === 0) ? 0 : (m.totalFree / m.totalDraws) * 100;
-    // *** USE totalDiamondDraws for percentage calculation ***
-    let diamondPercent = (m.totalDraws === 0) ? 0 : (m.totalDiamondDraws / m.totalDraws) * 100;
+    // console.log("buildMetricsHTML received metrics object (m):", m);
+    if (m && m.heuristicTotalDiamondsSpent === undefined) { // Check the key we actually want to display
+        console.error("!!! heuristicTotalDiamondsSpent is UNDEFINED in buildMetricsHTML input !!!");
+    }
 
+    let freePercent = (m.totalDraws === 0) ? 0 : (m.totalFree / m.totalDraws) * 100;
+    let diamondPercent = (m.totalDraws === 0) ? 0 : (m.totalDiamondDraws / m.totalDraws) * 100;
     const leaderClass = (flag) => (isComparePage && flag) ? ' compare-leader' : '';
+    const tokenIcon = getAsset('tokenIcon');
+    const diamondIcon = getAsset('diamond');
+    const dialIcon = getAsset('mysticalDialIcon');
     let html = '';
 
     // Total Draws
-    html += `
-        <div class="metric-card">
-            <div class="metric-label">Total Draws <img src="assets/mystical_dial.png" class="metric-icon" alt="Dial" /></div>
-            <div class="metric-value">${m.totalDraws}</div>
-        </div>`;
-
+    html += `<div class="metric-card"><div class="metric-label">Total Draws <img src="${dialIcon}" class="metric-icon" alt="Draw" /></div><div class="metric-value">${m.totalDraws ?? 'N/A'}</div></div>`;
     // Total Tokens
-    html += `
-        <div class="metric-card${leaderClass(compareFlags.isLeadingTotalTokens)}">
-            <div class="metric-label">Total Tokens <img src="assets/token.png" class="metric-icon" alt="Token" /></div>
-            <div class="metric-value">${m.totalCrests}</div>
-        </div>`;
+    html += `<div class="metric-card${leaderClass(compareFlags.isLeadingTotalTokens)}"><div class="metric-label">Total Tokens <img src="${tokenIcon}" class="metric-icon" alt="Token" /></div><div class="metric-value">${m.totalCrests ?? 'N/A'}</div></div>`;
 
-    // Avg Tokens/Draw (Stats page only)
-    if (!isComparePage) {
-        html += `
-            <div class="metric-card">
-                <div class="metric-label">Avg Tokens/Draw <img src="assets/token.png" class="metric-icon" alt="Token" /></div>
-                <div class="metric-value">${m.tokensPerDraw.toFixed(2)}</div>
-            </div>`;
-    }
+    // --- Total Diamonds Spent (Display HEURISTIC value) ---
+    html += `<div class="metric-card">
+                 <div class="metric-label">Total Spent <img src="${diamondIcon}" class="metric-icon" alt="Diamond" /></div>
+                 <div class="metric-value">${m.heuristicTotalDiamondsSpent?.toFixed(0) ?? 'N/A'}</div> <div class="metric-note">Diamonds (Adj.)</div> </div>`;
+    // --- End Total Spent ---
 
-    // Total Diamonds Spent (Now correctly calculated by computeMetrics)
-    html += `
-        <div class="metric-card">
-            <div class="metric-label">Total Spent <img src="assets/diamond.png" class="metric-icon" alt="Diamond" /></div>
-            <div class="metric-value">${m.totalDiamondsSpent}</div>
-            <div class="metric-note">Diamonds</div>
-        </div>`;
-
-    // Cost Efficiency (Now correctly calculated by computeMetrics)
+    // Cost Efficiency (Uses efficiency calculated with heuristic spend in computeMetrics)
     let costEfficiencyText = "N/A";
-    if (m.costEfficiency === 0) { costEfficiencyText = "0.00 💎/Token (Free)"; }
-    else if (m.costEfficiency === Infinity) { costEfficiencyText = "∞ 💎/Token"; }
-    else if (m.costEfficiency !== null) { costEfficiencyText = m.costEfficiency.toFixed(2) + " 💎/Token"; }
-    const costNote = (m.costEfficiency !== null && m.costEfficiency !== Infinity && m.costEfficiency !== 0) ? '(Lower is Better)' : '';
-    html += `
-        <div class="metric-card${leaderClass(compareFlags.isLeadingCostEfficiency)}">
-            <div class="metric-label">Cost Efficiency <i class="fas fa-coins metric-icon"></i></div>
-            <div class="metric-value">${costEfficiencyText}</div>
-            <div class="metric-note">${costNote}</div>
-        </div>`;
+    if (m.costEfficiency === Infinity) { costEfficiencyText = "∞ 💎/Token"; }
+    else if (m.costEfficiency === 0) { costEfficiencyText = "0.00 💎/Token"; } // Explicitly show 0 if calculated
+    else if (m.costEfficiency !== null && m.costEfficiency !== undefined) { costEfficiencyText = m.costEfficiency.toFixed(2) + " 💎/Token"; }
+    const costNote = (m.costEfficiency !== null && m.costEfficiency !== Infinity) ? '(Lower is Better)' : (m.costEfficiency === Infinity ? '(No Tokens for Cost)' : '');
+    html += `<div class="metric-card${leaderClass(compareFlags.isLeadingCostEfficiency)}"><div class="metric-label">Cost Efficiency <i class="fas fa-coins metric-icon"></i></div><div class="metric-value">${costEfficiencyText}</div><div class="metric-note">${costNote}</div></div>`;
 
     // Best Draw
-    let bestDrawHTML = "";
-    if (m.bestDraw) {
-        bestDrawHTML = `
-            <div class="metric-card${leaderClass(compareFlags.isLeadingBestDraw)}">
-                <div class="metric-label">Best Draw <img src="assets/token.png" class="metric-icon" alt="token" /></div>
-                <div class="metric-value">${m.bestDraw.crests}</div>
-                <div class="metric-note"> ${m.bestDraw.diamond > 0 ? `(${m.bestDraw.diamond}💎)` : "(Free)"} </div>
-            </div>`;
-    } else { /* N/A case */ }
-    html += bestDrawHTML || `<div class="metric-card"><div class="metric-label">Best Draw <img src="assets/token.png" class="metric-icon" alt="token" /></div><div class="metric-value">N/A</div></div>`;
-
-
+    let bestDrawHTML = `<div class="metric-card"><div class="metric-label">Best Draw <img src="${tokenIcon}" class="metric-icon" alt="token" /></div><div class="metric-value">N/A</div></div>`;
+    if (m.bestDraw) { bestDrawHTML = `<div class="metric-card${leaderClass(compareFlags.isLeadingBestDraw)}"><div class="metric-label">Best Draw <img src="${tokenIcon}" class="metric-icon" alt="token" /></div><div class="metric-value">${m.bestDraw.crests}</div><div class="metric-note"> ${m.bestDraw.diamond > 0 ? `(${m.bestDraw.diamond}💎)` : "(Free)"} </div></div>`; }
+    html += bestDrawHTML;
     // Free Draws
-    html += `
-        <div class="metric-card">
-            <div class="metric-label">Free Draws <img src="assets/mystical_dial.png" class="metric-icon" alt="Free" /></div>
-            <div class="metric-value">${m.totalFree}</div>
-            <div class="metric-note">${freePercent.toFixed(1)}%</div>
-        </div>`;
-
-    // Diamond Draws (Uses the count: totalDiamondDraws)
-    html += `
-        <div class="metric-card">
-            <div class="metric-label">Diamond Draws <img src="assets/diamond.png" class="metric-icon" alt="diamond" /></div>
-            <div class="metric-value">${m.totalDiamondDraws}</div>
-            <div class="metric-note">${diamondPercent.toFixed(1)}%</div>
-        </div>`;
-
-    // Luck Status / Score
-    let luckNote = isComparePage ? `${m.tokensPerDraw.toFixed(2)} <img src="assets/token.png" class="metric-icon" alt="Token" style="height: 1em; vertical-align: baseline;"/> /draw`
-                                 : `${m.tokensPerDraw.toFixed(2)} tokens/draw`;
-    html += `
-        <div class="metric-card${leaderClass(compareFlags.isLeadingLuck)}">
-            <div class="metric-label">Luck Score™ <img src="assets/mystical_dial.png" class="metric-icon" alt="Luck" /></div>
-            <div class="metric-value">${m.luckStatus}</div>
-            <div class="metric-note"> ${luckNote} </div>
-        </div>`;
+    html += `<div class="metric-card"><div class="metric-label">Free Draws <img src="${dialIcon}" class="metric-icon" alt="Free" /></div><div class="metric-value">${m.totalFree ?? 'N/A'}</div><div class="metric-note">${freePercent.toFixed(1)}%</div></div>`;
+    // Diamond Draws
+    html += `<div class="metric-card"><div class="metric-label">Diamond Draws <img src="${diamondIcon}" class="metric-icon" alt="diamond" /></div><div class="metric-value">${m.totalDiamondDraws ?? 'N/A'}</div><div class="metric-note">${diamondPercent.toFixed(1)}%</div></div>`;
+    // Luck Score
+    let luckNote = (m.totalDraws > 0 && m.tokensPerDraw !== undefined) ? `${m.tokensPerDraw.toFixed(2)} <img src="${tokenIcon}" class="metric-icon" alt="Token" style="height: 1em; vertical-align: baseline;"/> /draw` : '';
+    html += `<div class="metric-card${leaderClass(compareFlags.isLeadingLuck)}"><div class="metric-label">Luck Score™ <i class="fa-solid fa-clover metric-icon"></i></div><div class="metric-value">${m.luckStatus ?? 'N/A'}</div><div class="metric-note">${luckNote}</div></div>`;
 
     return html;
-}
+} // End buildMetricsHTML
 
   //===================== UPDATE ADVANCED METRICS (STATS PAGE) =====================
 
@@ -1857,152 +1998,201 @@ function buildMetricsHTML(m, isComparePage = false, compareFlags = {}) {
   //===================== UPDATE COMPARE PAGE =====================
 
   function updateCompare() {
-      let compareContainer = $("#compare-container");
-      compareContainer.empty();
+    let compareContainer = $("#compare-container");
+    compareContainer.empty(); // Clear previous content
 
-      // Setup compare page structure
-      compareContainer.html(`
-          <div class="compare-row">
-              <div class="compare-column" id="compare-mitko-col">
-                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
-                      <img src="assets/fredrinn.png" alt="Mitko" class="compare-user-icon me-2" /> Mitko
-                  </h5>
-                  <div class="metrics-grid" id="compare-mitko-grid"></div>
-              </div>
-              <div class="compare-column" id="compare-aylin-col">
-                  <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
-                      <img src="assets/lylia.png" alt="Aylin" class="compare-user-icon me-2" /> Aylin
-                  </h5>
-                  <div class="metrics-grid" id="compare-aylin-grid"></div>
-              </div>
-          </div>
-      `);
+    // --- Filter data for the current event for BOTH users ---
+    const allMitkoEntries = localData["Mitko"] || [];
+    const allAylinEntries = localData["Aylin"] || [];
 
-      const mitkoEntries = Array.isArray(localData["Mitko"]) ? localData["Mitko"] : [];
-      const aylinEntries = Array.isArray(localData["Aylin"]) ? localData["Aylin"] : [];
+    const mitkoEntries = allMitkoEntries.filter(entry => entry.event === currentEventKey);
+    const aylinEntries = allAylinEntries.filter(entry => entry.event === currentEventKey);
+    // console.log(`Updating compare for ${currentConfig.eventName}: Mitko (${mitkoEntries.length}), Aylin (${aylinEntries.length})`);
 
-      let mitkoMetrics = computeMetrics(mitkoEntries);
-      let aylinMetrics = computeMetrics(aylinEntries);
+    // Compute metrics for filtered data
+    let mitkoMetrics = computeMetrics(mitkoEntries);
+    let aylinMetrics = computeMetrics(aylinEntries);
 
-      // Determine who is "leading" in each relevant metric for highlighting
-       const mitkoFlags = {
-          isLeadingTotalTokens: mitkoMetrics.totalCrests > aylinMetrics.totalCrests,
-          isLeadingAvgTokens: false, // Not directly shown, covered by Luck
-          isLeadingBestDraw: (mitkoMetrics.bestDraw ? mitkoMetrics.bestDraw.crests : -1) > (aylinMetrics.bestDraw ? aylinMetrics.bestDraw.crests : -1),
-          isLeadingCostEfficiency: (() => {
-              const mEff = mitkoMetrics.costEfficiency;
-              const oEff = aylinMetrics.costEfficiency;
-              // Lower non-null/non-infinity is better. 0 is best.
-              if (mEff === 0 && oEff !== 0) return true; // Mitko free, Aylin not
-              if (mEff !== null && mEff !== Infinity && (oEff === null || oEff === Infinity || mEff < oEff)) return true; // Mitko has finite cost, better than Aylin's N/A, Inf, or higher finite cost
-              if (mEff === null && oEff === Infinity) return true; // Mitko N/A (no cost/no tokens) is better than infinite cost
+    // --- Determine Leaders (using updated computeMetrics results) ---
+     const mitkoFlags = {
+        isLeadingTotalTokens: mitkoMetrics.totalCrests > aylinMetrics.totalCrests,
+        isLeadingBestDraw: (mitkoMetrics.bestDraw?.crests ?? -1) > (aylinMetrics.bestDraw?.crests ?? -1),
+        isLeadingCostEfficiency: (() => { // Lower non-null/non-inf is better
+            const mEff = mitkoMetrics.costEfficiency; const oEff = aylinMetrics.costEfficiency;
+            if (mEff === null && oEff === null) return false; if (mEff === null) return false; if (oEff === null) return true;
+            if (mEff === Infinity && oEff === Infinity) return false; if (mEff === Infinity) return false; if (oEff === Infinity) return true;
+            return mEff < oEff; // Lower finite value wins
+        })(),
+         // Lead if luck status is better (Lucky > Average > Unlucky) or if equal status, higher avg tokens breaks tie
+        isLeadingLuck: (() => {
+              const luckOrder = { "Lucky": 3, "Average": 2, "Unlucky": 1, "N/A": 0 };
+              const mitkoLuckVal = luckOrder[mitkoMetrics.luckStatus] || 0;
+              const aylinLuckVal = luckOrder[aylinMetrics.luckStatus] || 0;
+              if (mitkoLuckVal > aylinLuckVal) return true;
+              if (mitkoLuckVal === aylinLuckVal && mitkoMetrics.tokensPerDraw > aylinMetrics.tokensPerDraw) return true;
               return false;
-          })(),
-          isLeadingLuck: mitkoMetrics.tokensPerDraw > aylinMetrics.tokensPerDraw && mitkoMetrics.luckStatus !== 'Average' && mitkoMetrics.luckStatus !== 'N/A' // Lead only if status is Lucky/Unlucky
-      };
+        })()
+    };
 
-      const aylinFlags = {
-          isLeadingTotalTokens: aylinMetrics.totalCrests > mitkoMetrics.totalCrests,
-          isLeadingAvgTokens: false, // Not directly shown, covered by Luck
-          isLeadingBestDraw: (aylinMetrics.bestDraw ? aylinMetrics.bestDraw.crests : -1) > (mitkoMetrics.bestDraw ? mitkoMetrics.bestDraw.crests : -1),
-          isLeadingCostEfficiency: (() => {
-               const mEff = aylinMetrics.costEfficiency;
-               const oEff = mitkoMetrics.costEfficiency;
-              if (mEff === 0 && oEff !== 0) return true;
-              if (mEff !== null && mEff !== Infinity && (oEff === null || oEff === Infinity || mEff < oEff)) return true;
-              if (mEff === null && oEff === Infinity) return true;
+    const aylinFlags = {
+        isLeadingTotalTokens: aylinMetrics.totalCrests > mitkoMetrics.totalCrests,
+        isLeadingBestDraw: (aylinMetrics.bestDraw?.crests ?? -1) > (mitkoMetrics.bestDraw?.crests ?? -1),
+        isLeadingCostEfficiency: (() => {
+             const mEff = aylinMetrics.costEfficiency; const oEff = mitkoMetrics.costEfficiency;
+             if (mEff === null && oEff === null) return false; if (mEff === null) return false; if (oEff === null) return true;
+             if (mEff === Infinity && oEff === Infinity) return false; if (mEff === Infinity) return false; if (oEff === Infinity) return true;
+             return mEff < oEff; // Lower finite value wins
+        })(),
+        isLeadingLuck: (() => {
+              const luckOrder = { "Lucky": 3, "Average": 2, "Unlucky": 1, "N/A": 0 };
+              const mitkoLuckVal = luckOrder[mitkoMetrics.luckStatus] || 0;
+              const aylinLuckVal = luckOrder[aylinMetrics.luckStatus] || 0;
+              if (aylinLuckVal > mitkoLuckVal) return true;
+              if (aylinLuckVal === mitkoLuckVal && aylinMetrics.tokensPerDraw > mitkoMetrics.tokensPerDraw) return true;
               return false;
-          })(),
-          isLeadingLuck: aylinMetrics.tokensPerDraw > mitkoMetrics.tokensPerDraw && aylinMetrics.luckStatus !== 'Average' && aylinMetrics.luckStatus !== 'N/A'
-      };
+        })()
+    };
 
-      // Use the shared builder function with flags
-      $("#compare-mitko-grid").html(buildMetricsHTML(mitkoMetrics, true, mitkoFlags));
-      $("#compare-aylin-grid").html(buildMetricsHTML(aylinMetrics, true, aylinFlags));
-  }
+    // --- Generate Compare Page HTML Structure (Use getAsset for icons) ---
+     compareContainer.html(`
+        <h3 class="mt-3 text-light text-center">Compare for ${currentConfig.eventName}</h3>
+        <div class="compare-row mt-4">
+            <div class="compare-column" id="compare-mitko-col">
+                <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
+                    <img src="${getAsset('mitkoIcon')}" alt="Mitko" class="compare-user-icon mb-2" /> Mitko
+                </h5>
+                <div class="metrics-grid" id="compare-mitko-grid">
+                    </div>
+            </div>
+            <div class="compare-column" id="compare-aylin-col">
+                <h5 class="text-light mb-3 d-flex align-items-center justify-content-center flex-column">
+                    <img src="${getAsset('aylinIcon')}" alt="Aylin" class="compare-user-icon mb-2" /> Aylin
+                </h5>
+                <div class="metrics-grid" id="compare-aylin-grid">
+                    </div>
+            </div>
+        </div>
+    `);
+
+    // --- Populate grids using the shared HTML builder ---
+    $("#compare-mitko-grid").html(buildMetricsHTML(mitkoMetrics, true, mitkoFlags));
+    $("#compare-aylin-grid").html(buildMetricsHTML(aylinMetrics, true, aylinFlags));
+
+} // End updateCompare function
 
   //===================== DELETE / EDIT ENTRY =====================
 
-  // Use event delegation for dynamically added elements
-  $(document).on("click", ".delete-entry", function() {
-      const id = $(this).data("id");
-      if (!id || String(id).startsWith('local-')) {
-           alert("Cannot delete an entry that hasn't synced yet.");
-           return;
-       }
+ // --- Delete Entry Handler ---
+ $(document).on("click", ".delete-entry", function() {
+    const id = $(this).data("id");
+    // Basic validation: ID exists and is not local (local entries can't be deleted from sheet)
+     if (!id || String(id).startsWith('local-')) {
+         alert("Cannot delete an entry that hasn't synced or failed sync.");
+         return;
+     }
 
-      if (confirm("Delete this entry?")) {
-          $("#loader").removeClass("d-none");
-          $.post(url_tracker, { action: "delete", id: id, User: currentUser }, function(response) {
-                  console.log("Delete response:", response);
-                  // Refetch data after successful delete
-                  fetchRemoteData(() => {
-                      updateHistory();
-                      updateStats();
-                      updateCompare();
+    // Use event name in confirmation
+    if (confirm(`Delete this entry from ${currentConfig.eventName}? This cannot be undone.`)) {
+        $("#loader").removeClass("d-none");
+        // Send ID, User, and Event Key to backend
+        $.post(url_tracker, {
+              action: "delete",
+              id: id,
+              User: currentUser
+              // event: currentEventKey // <-- Add if your backend 'delete' action needs the event key
+           })
+            .done(function(response) {
+                // console.log("Delete response:", response);
+                 if (response && response.result === 'deleted') {
+                      alert("Entry deleted successfully.");
+                      // Refetch data to update UI (removes the entry)
+                      fetchRemoteData(() => {
+                          updateHistory(); updateStats(); updateCompare();
+                          $("#loader").addClass("d-none");
+                      });
+                 } else {
+                       // Handle cases where backend couldn't find/delete
+                       alert(`Delete failed: ${response.error || 'Entry not found or server error.'}`);
+                       $("#loader").addClass("d-none");
+                 }
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.error("Delete AJAX Error:", textStatus, errorThrown);
+                alert("Delete failed. Could not reach server.");
+                $("#loader").addClass("d-none");
+            });
+    }
+}); // End delete-entry click
+
+// --- Edit Entry Handler ---
+$(document).on("click", ".edit-entry", function() {
+    const id = $(this).data("id");
+     // Basic validation: ID exists and is not local
+     if (!id || String(id).startsWith('local-')) {
+         alert("Cannot edit an entry that hasn't synced or failed sync.");
+         return;
+     }
+
+    // Find the entry in localData (ensure it's for the current event)
+    let entry = (localData[currentUser] || []).find(e => String(e.id) === String(id) && e.event === currentEventKey);
+    if (!entry) {
+        // If not found, it might be from a different event or already deleted/refreshed
+        alert(`Entry data not found locally for ${currentConfig.eventName}. Please refresh if the entry exists.`);
+        return;
+    }
+
+    // Prompt for new values
+    const nDStr = prompt(`Edit Diamonds (current: ${entry.diamond}):`, entry.diamond);
+    if (nDStr === null) return; // User cancelled Diamond prompt
+    const nCStr = prompt(`Edit Tokens (current: ${entry.crests}):`, entry.crests);
+    if (nCStr === null) return; // User cancelled Crests prompt
+
+    // Validate input
+    const nD = parseInt(nDStr); const nC = parseInt(nCStr);
+    if (isNaN(nD) || nD < 0 || isNaN(nC) || nC < 0) {
+        alert("Invalid input. Diamonds and Tokens must be non-negative numbers.");
+        return;
+    }
+
+    // Check if values actually changed
+    if (nD === entry.diamond && nC === entry.crests) {
+        alert("No changes detected.");
+        return;
+    }
+
+    // Use event name in confirmation
+    if (confirm(`Confirm Edit for ${currentConfig.eventName} entry: ${nD}💎 -> ${nC} Tokens?`)) {
+        $("#loader").removeClass("d-none");
+        // Send ID, User, new values, and Event Key to backend
+        $.post(url_tracker, {
+                action: "edit",
+                id: entry.id, // Use the found entry's ID
+                diamond: nD,
+                crests: nC,
+                user: currentUser // Send user in case backend logic needs it
+                // event: currentEventKey // <-- Add if your backend 'edit' action needs the event key
+            })
+            .done(function(res) {
+                // console.log("Edit response:", res);
+                 if (res && res.result === 'edited') {
+                      alert("Entry edited successfully.");
+                      // Refetch data to update UI with edited values
+                      fetchRemoteData(() => {
+                          updateHistory(); updateStats(); updateCompare();
+                          $("#loader").addClass("d-none");
+                      });
+                 } else {
+                      alert(`Edit failed: ${res.error || 'Entry not found or server error.'}`);
                       $("#loader").addClass("d-none");
-                  });
-              })
-              .fail(function() {
-                  alert("Delete failed. Please check the console or try again later.");
-                  $("#loader").addClass("d-none");
-              });
-      }
-  });
-
-  $(document).on("click", ".edit-entry", function() {
-      const id = $(this).data("id");
-       if (!id || String(id).startsWith('local-')) {
-           alert("Cannot edit an entry that hasn't synced yet.");
-           return;
-       }
-
-      // Find the entry in local data first
-      let entry = localData[currentUser]?.find(e => String(e.id) === String(id));
-      if (!entry) {
-          alert("Local data for this entry not found. Cannot edit.");
-          return;
-      }
-
-      // Prompt for new values
-      const nDStr = prompt("Edit Diamonds:", entry.diamond);
-      if (nDStr === null) return; // User cancelled
-
-      const nCStr = prompt("Edit Tokens:", entry.crests);
-      if (nCStr === null) return; // User cancelled
-
-      const nD = parseInt(nDStr);
-      const nC = parseInt(nCStr);
-
-      if (isNaN(nD) || nD < 0 || isNaN(nC) || nC < 0) {
-          alert("Invalid input. Diamonds and Tokens must be non-negative numbers.");
-          return;
-      }
-
-      // Check if values actually changed
-      if (nD === entry.diamond && nC === entry.crests) {
-          // No changes made
-          return;
-      }
-
-      if (confirm(`Confirm Edit: ${nD}💎 -> ${nC} Tokens?`)) {
-          $("#loader").removeClass("d-none");
-          $.post(url_tracker, { action: "edit", id: entry.id, diamond: nD, crests: nC, user: currentUser }, function(res) {
-                  console.log("Edited:", res);
-                  // Refetch data after successful edit
-                  fetchRemoteData(() => {
-                      updateHistory();
-                      updateStats();
-                      updateCompare();
-                      $("#loader").addClass("d-none");
-                  });
-              })
-              .fail(function() {
-                  alert("Edit failed. Please check the console or try again later.");
-                  $("#loader").addClass("d-none");
-              });
-      }
-  });
+                 }
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.error("Edit AJAX Error:", textStatus, errorThrown);
+                alert("Edit failed. Could not reach server.");
+                $("#loader").addClass("d-none");
+            });
+    }
+}); // End edit-entry click
 
   //===================== SWIPE HANDLING =====================
 
@@ -2062,26 +2252,28 @@ function getEndOfDayTimestamp(date) {
 
 
 // --- Daily Summary Screen Button Handlers ---
-
 $("#continue-to-app").click(function() {
     $("#daily-summary-screen").fadeOut(300, function() {
         $(this).addClass("d-none"); // Hide summary screen
-        $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app
+        // Show main app (which should be initialized by now)
+        $("#main-app").hide().removeClass("d-none").fadeIn(300);
     });
-});
+ });
 
-$("#hide-summary-today").click(function() {
+ $("#hide-summary-today").click(function() {
     const todayStr = getTodayDateString();
-    localStorage.setItem('hideDailySummaryUntil', todayStr); // Store today's date
-    console.log("Hiding daily summary until end of day:", todayStr);
-
+    localStorage.setItem('hideDailySummaryUntil', todayStr); // Store today's date string
+    // console.log("Hiding daily summary until end of day:", todayStr);
+    // Fade out summary and show main app
     $("#daily-summary-screen").fadeOut(300, function() {
-        $(this).addClass("d-none"); // Hide summary screen
-        $("#main-app").hide().removeClass("d-none").fadeIn(300); // Show main app
+        $(this).addClass("d-none");
+        $("#main-app").hide().removeClass("d-none").fadeIn(300);
     });
-});
+ });
 
-function calculateTodaysDrawsAndDiscount(allData) { // Renamed for clarity
+ // --- Calculate Today's Draws and Discount Status ---
+ // Needs to filter allUserData by currentEventKey
+ function calculateTodaysDrawsAndDiscount(allUserData) { // allUserData = { Mitko: [...], Aylin: [...] }
     const todayStart = getStartOfDayTimestamp(new Date());
     const todayEnd = getEndOfDayTimestamp(new Date());
     let mitkoCount = 0;
@@ -2089,36 +2281,34 @@ function calculateTodaysDrawsAndDiscount(allData) { // Renamed for clarity
     let mitkoDiscountCrests = null; // Use null to indicate not found/done
     let aylinDiscountCrests = null;
 
-    // Process Mitko's data (find total and first 25 diamond draw)
-    if (allData && allData.Mitko) {
-        // Sort Mitko's entries today by timestamp ascending to find the first easily
-        const mitkoTodayEntries = allData.Mitko
+    // --- Filter Mitko's data for current event AND today ---
+    const mitkoAllEventEntries = allUserData.Mitko || [];
+    const mitkoCurrentEventEntries = mitkoAllEventEntries.filter(entry => entry.event === currentEventKey);
+    const mitkoTodayEntries = mitkoCurrentEventEntries
             .filter(entry => entry.timestamp >= todayStart && entry.timestamp <= todayEnd)
-            .sort((a, b) => a.timestamp - b.timestamp);
+            .sort((a, b) => a.timestamp - b.timestamp); // Sort oldest first to find *first* discount easily
 
-        mitkoCount = mitkoTodayEntries.length; // Total count for today
+    mitkoCount = mitkoTodayEntries.length; // Total count for today for this event
 
-        // Find the first entry where diamond is 25
-        const firstDiscountDraw = mitkoTodayEntries.find(entry => entry.diamond === 25);
-        if (firstDiscountDraw) {
-            mitkoDiscountCrests = firstDiscountDraw.crests; // Store the crests value
-        }
+    // Find the first 25 diamond draw for today for this event
+    const mitkoFirstDiscountDraw = mitkoTodayEntries.find(entry => entry.diamond === 25);
+    if (mitkoFirstDiscountDraw) {
+        mitkoDiscountCrests = mitkoFirstDiscountDraw.crests; // Store the crests value
     }
 
-    // Process Aylin's data (find total and first 25 diamond draw)
-    if (allData && allData.Aylin) {
-        // Sort Aylin's entries today by timestamp ascending
-        const aylinTodayEntries = allData.Aylin
+    // --- Filter Aylin's data for current event AND today ---
+    const aylinAllEventEntries = allUserData.Aylin || [];
+    const aylinCurrentEventEntries = aylinAllEventEntries.filter(entry => entry.event === currentEventKey);
+    const aylinTodayEntries = aylinCurrentEventEntries
             .filter(entry => entry.timestamp >= todayStart && entry.timestamp <= todayEnd)
-            .sort((a, b) => a.timestamp - b.timestamp);
+            .sort((a, b) => a.timestamp - b.timestamp); // Sort oldest first
 
-        aylinCount = aylinTodayEntries.length; // Total count for today
+    aylinCount = aylinTodayEntries.length; // Total count for today for this event
 
-        // Find the first entry where diamond is 25
-        const firstDiscountDraw = aylinTodayEntries.find(entry => entry.diamond === 25);
-        if (firstDiscountDraw) {
-            aylinDiscountCrests = firstDiscountDraw.crests; // Store the crests value
-        }
+    // Find the first 25 diamond draw for today for this event
+    const aylinFirstDiscountDraw = aylinTodayEntries.find(entry => entry.diamond === 25);
+    if (aylinFirstDiscountDraw) {
+        aylinDiscountCrests = aylinFirstDiscountDraw.crests; // Store the crests value
     }
 
     return {
@@ -2127,8 +2317,53 @@ function calculateTodaysDrawsAndDiscount(allData) { // Renamed for clarity
         mitkoDiscountCrests: mitkoDiscountCrests,
         aylinDiscountCrests: aylinDiscountCrests
     };
-}
+ } // End calculateTodaysDrawsAndDiscount
 
+ // --- Final Initializations & Event Selector Setup Call ---
+
+ // Modify the sidebar click handler to also set up the event selector
+ // when the settings tab is activated.
+ $("#sidebar .nav-link").off('click').on('click', function(e) { // Use .off().on() to avoid duplicate listeners
+    e.preventDefault();
+    let tabId = $(this).data("tab");
+
+    $("#sidebar .nav-link").removeClass('active');
+    $(this).addClass('active');
+
+    $(".tab-content").addClass("d-none");
+    $("#tab-" + tabId).removeClass("d-none").hide().fadeIn(150);
+
+    localStorage.setItem(LAST_ACTIVE_TAB_KEY, tabId);
+
+    $("#sidebar").removeClass("open");
+    $("#overlay").stop().fadeOut(300);
+
+    // Refresh tab content / Setup specific tab UI
+    switch (tabId) {
+        case 'stats':
+            updateStats();
+            break;
+        case 'compare':
+            updateCompare();
+            break;
+        case 'history':
+            updateHistory();
+            break;
+        case 'settings':
+            // *** Call setupEventSelector when settings tab is shown ***
+            setupEventSelector();
+            break;
+    }
+});
+
+// Initial draw of the ring if slider context exists (might be redundant if initUser handles it)
+// if (ctx) { drawRing(crestValue); }
+
+
+// Make sure initUser is called if a user is already selected on page load
+if(currentUser) {
+  initUser(currentUser);
+}
 
 // --- Start Wrapped View Logic ---
 let currentSlideIndex = 0;
@@ -2478,7 +2713,7 @@ $('#show-wrapped-btn').click(function() {
         alert("Could not generate summary stats. Please try again later.");
         return;
     }
-    console.log("Wrapped Stats:", stats); // Good for debugging
+    // console.log("Wrapped Stats:", stats); // Good for debugging
 
     // --- Define image sources *before* using them ---
     let userImgSrc = (currentUser === "Mitko") ? "assets/fredrinn.png" : "assets/lylia.png";
